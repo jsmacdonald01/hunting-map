@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <title>Hunting Map</title>
+  <meta name="theme-color" content="#1f2a1c">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Hunting Map">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="icon" href="icon-192.png">
+  <link rel="stylesheet" href="vendor/maplibre-gl.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="map"></div>
+
+  <div id="status" hidden></div>
+  <div id="recbar" hidden><span class="dot"></span><span id="rectext">Recording</span></div>
+
+  <div id="tools">
+    <button id="btn-layers" title="Map type">Layers</button>
+    <button id="btn-pin" title="Drop a pin">Pin</button>
+    <button id="btn-rec" title="Record my path">Record</button>
+    <button id="btn-measure" title="Measure distance and acres">Measure</button>
+    <button id="btn-goto" title="Guide me to a pin">Go to</button>
+    <button id="btn-today" title="Weather, sun, moon, seasons">Today</button>
+    <button id="btn-menu" title="Downloads, pins and paths">Menu</button>
+  </div>
+
+  <div id="measurebar" class="bar" hidden>
+    <div class="text">Tap the map to add points.</div>
+    <div class="row"><button class="undo">Undo</button><button class="clear">Clear</button><button class="done primary">Done</button></div>
+  </div>
+  <div id="guidebar" class="bar" hidden>
+    <div class="guide-row"><span class="arrow">↑</span><div class="text">Finding your location…</div></div>
+    <div class="row"><button id="guide-stop">Stop</button></div>
+  </div>
+
+  <div id="crosshair" hidden></div>
+  <div id="placebar" hidden>
+    <div>Move the map so the + is where you want the pin.</div>
+    <div class="row">
+      <button id="place-here" class="primary">Drop here</button>
+      <button id="place-gps">At my location</button>
+      <button id="place-cancel">Cancel</button>
+    </div>
+  </div>
+
+  <div id="layers" class="panel" hidden>
+    <div class="seg">
+      <button data-base="sat" class="on">Satellite</button>
+      <button data-base="topo">Topo</button>
+    </div>
+    <label><input type="checkbox" id="lyr-parcels" checked> Property lines</label>
+    <label><input type="checkbox" id="lyr-public" checked> Public hunting areas</label>
+    <label><input type="checkbox" id="lyr-roads" checked> Forest roads &amp; trails</label>
+    <label><input type="checkbox" id="lyr-sight"> Animal sightings</label>
+    <div id="sight-options" hidden>
+      <div id="sight-animals" class="chips"></div>
+      <div class="row">
+        <select id="sight-months" aria-label="Time of year">
+          <option value="all">All year</option><option value="fall">Fall &amp; winter (Sep–Feb)</option><option value="spring">Spring &amp; summer (Mar–Aug)</option>
+        </select>
+        <select id="sight-style" aria-label="Show as">
+          <option value="dots">Dots</option><option value="heat">Hot spots</option>
+        </select>
+      </div>
+    </div>
+    <div class="legend">
+      <span><i class="sw boundary"></i>Public hunting land</span>
+      <span><i class="sw area"></i>Special area inside it</span>
+      <span><i class="sw nohunt"></i>No hunting / private</span>
+      <span><i class="ln road"></i>Forest road (yellow = seasonal)</span>
+      <span><i class="ln ohv"></i>ATV / OHV trail</span>
+      <span><i class="ln trail"></i>Foot trail</span>
+    </div>
+  </div>
+
+  <div id="sheet" hidden>
+    <button class="close" aria-label="Close">×</button>
+    <div id="sheet-body"></div>
+  </div>
+
+  <script src="vendor/maplibre-gl.js"></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

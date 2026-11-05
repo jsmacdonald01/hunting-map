@@ -1,0 +1,53 @@
+{
+  "year": "2026-2027",
+  "counties": ["Montgomery", "Walker", "San Jacinto"],
+  "source": "https://tpwd.texas.gov/regulations/outdoor-annual/regs/counties/montgomery",
+  "checked": "2026-11-05",
+  "species": [
+    { "name": "White-tailed deer", "hours": "game",
+      "bag": "4 deer: no more than 2 bucks (only 1 with a 13-inch or wider inside spread) and no more than 2 antlerless.",
+      "note": "Antlerless by hunting license tag Nov 7-29 only. No antlerless deer on National Forest land.",
+      "seasons": [
+        { "label": "Archery only", "from": "2026-10-03", "to": "2026-11-06" },
+        { "label": "Early youth only", "from": "2026-10-30", "to": "2026-11-01" },
+        { "label": "General", "from": "2026-11-07", "to": "2027-01-03" },
+        { "label": "Late youth only", "from": "2027-01-04", "to": "2027-01-17" },
+        { "label": "Muzzleloader", "from": "2027-01-04", "to": "2027-01-17" } ] },
+    { "name": "Feral hog", "hours": "any", "year_round": true,
+      "bag": "No bag limit.", "note": "No closed season. A hunting license is required. On the National Forest WMA you also need the Annual Public Hunting Permit." },
+    { "name": "Squirrel", "hours": "game", "bag": "10 a day.",
+      "seasons": [
+        { "label": "Youth only", "from": "2026-09-25", "to": "2026-09-27" },
+        { "label": "General", "from": "2026-10-01", "to": "2027-02-28" },
+        { "label": "Spring", "from": "2027-05-01", "to": "2027-05-31" } ] },
+    { "name": "Dove", "hours": "migratory", "note": "Central Zone. Migratory Game Bird Endorsement and HIP certification required.",
+      "seasons": [
+        { "label": "Regular", "from": "2026-09-01", "to": "2026-10-25" },
+        { "label": "Regular (second split)", "from": "2026-12-11", "to": "2027-01-14" } ] },
+    { "name": "Teal", "hours": "migratory", "bag": "6 a day.",
+      "seasons": [ { "label": "September teal", "from": "2026-09-19", "to": "2026-09-27" } ] },
+    { "name": "Duck", "hours": "migratory", "bag": "6 a day (limits on mallards, wood ducks, pintail and others).",
+      "note": "North Zone. Federal Duck Stamp, Migratory Game Bird Endorsement and HIP certification required.",
+      "seasons": [
+        { "label": "Youth only", "from": "2026-11-07", "to": "2026-11-08" },
+        { "label": "Veterans and active military", "from": "2026-11-07", "to": "2026-11-08" },
+        { "label": "Regular", "from": "2026-11-14", "to": "2026-11-29" },
+        { "label": "Regular (second split)", "from": "2026-12-05", "to": "2027-01-31" } ] },
+    { "name": "Goose", "hours": "migratory", "note": "Eastern Zone. Duck stamp, endorsement and HIP required.",
+      "seasons": [
+        { "label": "Early Canada geese", "from": "2026-09-12", "to": "2026-09-27" },
+        { "label": "Dark geese", "from": "2026-11-07", "to": "2027-01-31" },
+        { "label": "Light geese", "from": "2026-11-07", "to": "2027-02-19" } ] },
+    { "name": "Quail", "hours": "game", "bag": "15 a day.", "note": "Upland Game Bird Endorsement required.",
+      "seasons": [ { "label": "Regular", "from": "2026-11-01", "to": "2027-02-28" } ] },
+    { "name": "Woodcock", "hours": "migratory", "bag": "3 a day.",
+      "seasons": [ { "label": "Regular", "from": "2026-12-18", "to": "2027-01-31" } ] },
+    { "name": "Snipe", "hours": "migratory", "bag": "8 a day.",
+      "seasons": [ { "label": "Regular", "from": "2026-11-07", "to": "2027-02-21" } ] },
+    { "name": "Rails and gallinules", "hours": "migratory",
+      "seasons": [
+        { "label": "Early", "from": "2026-09-19", "to": "2026-09-27" },
+        { "label": "Regular", "from": "2026-11-07", "to": "2027-01-06" } ] },
+    { "name": "Turkey", "closed": true, "note": "No open season in these counties." }
+  ]
+}
