@@ -25,7 +25,7 @@ const settle = async (ms = 2500) => { await page.waitForFunction(() => window.hu
 const jump = (c, z) => page.evaluate(([c, z]) => window.huntingMap.jumpTo({ center: c, zoom: z }), [c, z]);
 const sheet = () => page.locator('#sheet-body').innerText();
 
-await page.goto('http://localhost:8765/');
+await page.goto(`http://localhost:${process.env.PORT || 8765}/`);
 await page.waitForFunction(() => window.huntingMap?.loaded(), null, { timeout: 60000 });
 await page.reload();
 await page.waitForFunction(() => window.huntingMap?.loaded() && navigator.serviceWorker?.controller, null, { timeout: 60000 });
@@ -63,7 +63,7 @@ if (road) {
 // 3. Today panel.
 await jump([HERE.longitude, HERE.latitude], 13); await settle(1000);
 await page.click('#btn-today');
-await page.waitForFunction(() => /Legal shooting hours/.test(document.querySelector('#sheet-body').innerText), null, { timeout: 20000 });
+await page.waitForFunction(() => /Legal shooting hours/i.test(document.querySelector('#sheet-body').innerText), null, { timeout: 20000 });
 const today = await sheet();
 log('Today:', today.split('\n').filter(l => /°|Deer, hogs|Dove, ducks|lit|Major|White-tailed|Open|Closed/.test(l)).slice(0, 8).join(' | '));
 await shot('4-today');
@@ -113,7 +113,7 @@ await jump([-95.45, 30.55], 11); await settle(4000);
 log('OFFLINE sightings on screen:', await page.evaluate(() => window.huntingMap.queryRenderedFeatures({ layers: ['sight-dots'] }).length),
   '| roads:', await page.evaluate(() => window.huntingMap.queryRenderedFeatures({ layers: ['roads-road', 'roads-trail', 'roads-ohv'] }).length));
 await page.click('#btn-today');
-await page.waitForFunction(() => /Legal shooting hours/.test(document.querySelector('#sheet-body').innerText), null, { timeout: 20000 });
+await page.waitForFunction(() => /Legal shooting hours/i.test(document.querySelector('#sheet-body').innerText), null, { timeout: 20000 });
 log('OFFLINE Today weather line:', (await sheet()).split('\n').find(l => /Saved forecast|Needs signal/.test(l)) || '(none)');
 await shot('9-offline-today');
 

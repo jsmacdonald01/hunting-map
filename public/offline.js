@@ -12,6 +12,11 @@ export const USGS = {
   usgstopo: 'https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile',
 };
 
+// Ground heights for the 3D view and hill shading (free public data hosted by Amazon, no key needed).
+export const DEM_URL = 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium';
+export const DEM_MAX = 13; // about 16 m per pixel, plenty for creeks and ridges
+const AVG_DEM_BYTES = 80000;
+
 const abs = p => new URL(p, location.href).href;
 export const parcelTileUrl = key => abs(`data/parcels/${key}/`) + '{z}/{x}/{y}.pbf';
 
@@ -40,13 +45,17 @@ export function countyFiles(m) {
       list.push({ key: url, from: url });
     }
   }
+  // Ground heights: far fewer pictures, since they stop at a wider zoom.
+  const dem = new Set();
+  for (const [x, y] of z14) for (let z = MIN_Z; z <= DEM_MAX; z++) dem.add(`${z}/${x >> (14 - z)}/${y >> (14 - z)}`);
+  for (const t of dem) list.push({ key: `${DEM_URL}/${t}.png`, from: `${DEM_URL}/${t}.png` });
   return list;
 }
 
 export function estimateBytes(summary) {
   // Rough guess before the full list is loaded: about 21 map pictures per close-up property tile per layer.
   const z14 = summary.parcelTileCount / 1.4;
-  return summary.parcelBytes + z14 * (21 + 5) * AVG_TILE_BYTES;
+  return summary.parcelBytes + z14 * (21 + 5) * AVG_TILE_BYTES + z14 * 0.4 * AVG_DEM_BYTES;
 }
 
 async function manifest(key) {
@@ -86,7 +95,7 @@ export async function downloadCounty(key, onProgress, signal) {
   }
   await Promise.all(Array.from({ length: 8 }, worker));
   if (signal?.aborted) throw new Error('Stopped');
-  const record = { id: key, name: m.name, bbox: m.bbox, files: files.length, failed, date: new Date().toISOString(), prepared: m.prepared };
+  const record = { id: key, name: m.name, bbox: m.bbox, files: files.length, failed, terrain: true, date: new Date().toISOString(), prepared: m.prepared };
   await db.put('counties', record);
   return record;
 }

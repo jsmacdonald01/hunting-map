@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
   <title>Hunting Map</title>
-  <meta name="theme-color" content="#1f2a1c">
+  <meta name="theme-color" content="#0d1210">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -12,36 +12,75 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="icon" href="icon-192.png">
+  <link rel="preload" href="fonts/ui/barlow-semi-condensed-700.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="vendor/maplibre-gl.css">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div id="map"></div>
+  <canvas id="wind" aria-hidden="true"></canvas>
+  <div id="mood" aria-hidden="true"></div>
 
-  <div id="status" hidden></div>
-  <div id="recbar" hidden><span class="dot"></span><span id="rectext">Recording</span></div>
-
-  <div id="tools">
-    <button id="btn-layers" title="Map type">Layers</button>
-    <button id="btn-pin" title="Drop a pin">Pin</button>
-    <button id="btn-rec" title="Record my path">Record</button>
-    <button id="btn-measure" title="Measure distance and acres">Measure</button>
-    <button id="btn-goto" title="Guide me to a pin">Go to</button>
-    <button id="btn-today" title="Weather, sun, moon, seasons">Today</button>
-    <button id="btn-menu" title="Downloads, pins and paths">Menu</button>
+  <!-- Top: time of day, and status messages -->
+  <div id="topbar">
+    <button id="timepill" class="glass" title="Time of day, light and wind">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></svg>
+      <span id="time-label">Now</span><span id="wind-label"></span>
+    </button>
+    <div id="status" class="glass" hidden></div>
+    <div id="recbar" hidden><span class="dot"></span><span id="rectext">Recording</span></div>
+  </div>
+  <div id="timebar" class="glass" hidden>
+    <div class="time-row"><b id="time-big"></b><span id="time-sub"></span><button id="time-now">Now</button></div>
+    <input type="range" id="time-slider" min="0" max="1435" step="5" aria-label="Time of day">
+    <div class="time-scale"><span>12 AM</span><span>6</span><span>Noon</span><span>6</span><span>12</span></div>
   </div>
 
-  <div id="measurebar" class="bar" hidden>
+  <!-- Right edge: view controls -->
+  <div id="rail">
+    <button id="btn-compass" class="glass" title="Turn the map north-up">
+      <svg viewBox="0 0 24 24"><path d="M12 2.5 15.2 12H8.8L12 2.5Z" fill="#ff6a13" stroke="none"/><path d="M12 21.5 8.8 12h6.4L12 21.5Z" fill="currentColor" stroke="none" opacity=".5"/></svg>
+    </button>
+    <button id="btn-3d" class="glass" title="Switch between flat and 3D"><span class="lbl">3D</span></button>
+    <button id="btn-locate" class="glass" title="Show where I am">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="2.2" fill="currentColor" stroke="none"/><path d="M12 2v3.5M12 18.5V22M2 12h3.5M18.5 12H22"/></svg>
+    </button>
+    <button id="btn-night" class="glass" title="Red night mode">
+      <svg viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5Z"/></svg>
+    </button>
+    <button id="btn-zoom-in" class="glass desk" title="Zoom in"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+    <button id="btn-zoom-out" class="glass desk" title="Zoom out"><svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button>
+  </div>
+
+  <!-- Bottom: main tools -->
+  <nav id="tools" class="glass">
+    <button id="btn-layers" title="Map type and layers">
+      <svg viewBox="0 0 24 24"><path d="M12 3 2.5 8.5 12 14l9.5-5.5L12 3Z"/><path d="m2.5 13.5 9.500 5.5 9.500-5.500"/></svg><span class="lbl">Layers</span></button>
+    <button id="btn-pin" title="Drop a pin">
+      <svg viewBox="0 0 24 24"><path d="M12 21.500s-6.500-6.200-6.500-11.300A6.500 6.500 0 0 1 12 3.500a6.500 6.500 0 0 1 6.500 6.700c0 5.100-6.500 11.300-6.500 11.300Z"/><circle cx="12" cy="10" r="2.400"/></svg><span class="lbl">Pin</span></button>
+    <button id="btn-rec" title="Record my path">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.500"/><circle cx="12" cy="12" r="3.600" fill="currentColor" stroke="none"/></svg><span class="lbl">Record</span></button>
+    <button id="btn-measure" title="Measure distance and acres">
+      <svg viewBox="0 0 24 24"><path d="m3 16 13-13 5 5L8 21l-5-5Z"/><path d="m7.500 11.500 2 2M10.500 8.500l2 2M13.500 5.500l2 2"/></svg><span class="lbl">Measure</span></button>
+    <button id="btn-goto" title="Guide me to a pin">
+      <svg viewBox="0 0 24 24"><path d="M12 2.500 19.500 21 12 16.500 4.500 21 12 2.500Z"/></svg><span class="lbl">Go to</span></button>
+    <button id="btn-today" title="Weather, sun, moon, seasons">
+      <svg viewBox="0 0 24 24"><rect x="3.500" y="5" width="17" height="15.500" rx="2.500"/><path d="M3.500 10h17M8 3v4M16 3v4"/></svg><span class="lbl">Today</span></button>
+    <button id="btn-menu" title="Downloads, pins and paths, settings">
+      <svg viewBox="0 0 24 24"><path d="M4 6.500h16M4 12h16M4 17.500h16"/></svg><span class="lbl">Menu</span></button>
+  </nav>
+
+  <div id="measurebar" class="bar glass" hidden>
     <div class="text">Tap the map to add points.</div>
     <div class="row"><button class="undo">Undo</button><button class="clear">Clear</button><button class="done primary">Done</button></div>
   </div>
-  <div id="guidebar" class="bar" hidden>
+  <div id="guidebar" class="bar glass" hidden>
     <div class="guide-row"><span class="arrow">↑</span><div class="text">Finding your location…</div></div>
     <div class="row"><button id="guide-stop">Stop</button></div>
   </div>
 
   <div id="crosshair" hidden></div>
-  <div id="placebar" hidden>
+  <div id="placebar" class="bar glass" hidden>
     <div>Move the map so the + is where you want the pin.</div>
     <div class="row">
       <button id="place-here" class="primary">Drop here</button>
@@ -50,14 +89,16 @@
     </div>
   </div>
 
-  <div id="layers" class="panel" hidden>
+  <div id="layers" class="panel glass" hidden>
     <div class="seg">
       <button data-base="sat" class="on">Satellite</button>
+      <button data-base="hybrid">Hybrid</button>
       <button data-base="topo">Topo</button>
     </div>
     <label><input type="checkbox" id="lyr-parcels" checked> Property lines</label>
     <label><input type="checkbox" id="lyr-public" checked> Public hunting areas</label>
     <label><input type="checkbox" id="lyr-roads" checked> Forest roads &amp; trails</label>
+    <label><input type="checkbox" id="lyr-wind" checked> Wind</label>
     <label><input type="checkbox" id="lyr-sight"> Animal sightings</label>
     <div id="sight-options" hidden>
       <div id="sight-animals" class="chips"></div>
@@ -80,10 +121,18 @@
     </div>
   </div>
 
-  <div id="sheet" hidden>
+  <div id="sheet" class="glass" hidden>
     <button class="close" aria-label="Close">×</button>
     <div id="sheet-body"></div>
   </div>
+
+  <div id="toast" class="glass" hidden></div>
+
+  <div id="intro" hidden>
+    <div class="intro-title"><span>Hunting</span> Map</div>
+    <div class="intro-skip">Tap to skip</div>
+  </div>
+  <div id="nightveil" hidden></div>
 
   <script src="vendor/maplibre-gl.js"></script>
   <script type="module" src="app.js"></script>

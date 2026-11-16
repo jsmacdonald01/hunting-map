@@ -6,7 +6,7 @@ import { spawn } from 'node:child_process';
 import { chromium } from 'playwright';
 
 const [key = 'san-jacinto', lng = '-95.1180', lat = '30.5990'] = process.argv.slice(2);
-const URL = 'http://localhost:8765/';
+const URL = `http://localhost:${process.env.PORT || 8765}/`;
 const OUT = path.resolve(import.meta.dirname, 'screenshots');
 fs.mkdirSync(OUT, { recursive: true });
 const log = (...a) => console.log(new Date().toISOString().slice(11, 19), ...a);
