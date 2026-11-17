@@ -10,6 +10,9 @@ export function applyBase({ instant = false } = {}) {
   const want = {
     esri: sat && state.online ? 1 : 0,
     usgsimg: sat && !state.online ? 1 : 0,
+    hd: sat && !state.online ? 1 : 0,                    // saved "extra sharp" photos, where a county has them
+    tx22: state.base === 'tx22' && state.online ? 1 : 0, // Texas state photos sit on top of the satellite picture
+    tx15: state.base === 'tx15' && state.online ? 1 : 0,
     usgstopo: state.base === 'topo' ? 1 : state.base === 'hybrid' ? 0.5 : 0,
   };
   const set = (l, v) => map.setPaintProperty(l, 'raster-opacity', v);
@@ -19,7 +22,7 @@ export function applyBase({ instant = false } = {}) {
   for (const l of BASE_LAYERS) if (want[l]) { map.setLayoutProperty(l, 'visibility', 'visible'); set(l, want[l]); }
   if (instant) { for (const l of BASE_LAYERS) if (!want[l]) { set(l, 0); hide(l); } }
   else {
-    setTimeout(() => { if (mine === swap && !want.usgstopo) set('usgstopo', 0); }, 200);
+    setTimeout(() => { if (mine === swap) for (const l of ['hd', 'tx22', 'tx15', 'usgstopo']) if (!want[l]) set(l, 0); }, 200);
     setTimeout(() => { if (mine === swap) for (const l of ['esri', 'usgsimg']) if (!want[l]) set(l, 0); }, 700);
     setTimeout(() => { if (mine === swap) BASE_LAYERS.forEach(hide); }, 1300);
   }

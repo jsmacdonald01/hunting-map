@@ -63,6 +63,16 @@ Refresh sightings and roads with `node scripts/prepare-extras.mjs` (about 10 min
 - **Opening fly-in:** on a fresh start the app flies from the globe down to your last view. Tap to skip.
   It doesn't play when you flip back to the app within half an hour.
 
+**Sharper pictures and Street View (added 2026-11-17)**
+- **Layers → Summer photo / Winter, leaves off:** two Texas state aerial photos (2022 and 2015). The winter one shows
+  trails and creek bottoms that summer leaves hide. They need signal. With signal, the Esri satellite is still the sharpest.
+- **Zoom** goes two steps closer than before (the picture gets bigger, not finer; Esri has nothing finer here).
+- **Menu → Download maps → Extra sharp offline photos:** saves the state's 2022 photo at twice the detail for use with
+  no signal. About triple the size per county, and slower to download. Tap **Update** on a county to add it.
+- **Street View** and **Google Maps** buttons are at the bottom of every tap card and pin card. Street View only
+  has pictures along roads, and needs signal.
+- The state's extra-sharp 6-inch photos don't cover Montgomery, Walker or San Jacinto counties.
+
 **Menu → Display**
 - **Graphics:** Auto (eases off by itself on a slow phone, low battery or Low Power Mode), Full, or Lite.
 - Night mode switch, and a switch to turn the opening fly-in off.

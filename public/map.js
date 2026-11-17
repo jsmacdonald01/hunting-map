@@ -1,7 +1,7 @@
 /* global maplibregl */
 // Builds the map itself: every picture layer, line layer and label, in drawing order (bottom first).
 import { ESRI, TXGIO, ANIMALS, ACCENT, EMPTY, introWanted } from './core.js';
-import { USGS, IMG_MAX, TOPO_MAX, DEM_URL, DEM_MAX } from './offline.js';
+import { USGS, IMG_MAX, TOPO_MAX, DEM_URL, DEM_MAX, TX_PHOTOS, txPhotoUrl, SHARP_Z } from './offline.js';
 
 const saved = JSON.parse(localStorage.getItem('view') || 'null');
 const polys = ['in', ['geometry-type'], ['literal', ['Polygon', 'MultiPolygon']]];
@@ -9,6 +9,15 @@ const points = ['in', ['geometry-type'], ['literal', ['Point', 'MultiPoint']]];
 const font = ['OpenSansSemibold'];
 const fade = { duration: 400, delay: 0 };
 const demAttribution = 'Terrain: Mapzen / AWS Terrain Tiles (USGS 3DEP)';
+
+// Texas state photos are asked for square by square through one helper, so saved copies match exactly offline.
+maplibregl.addProtocol('txphoto', async (params, abort) => {
+  const [key, z, x, y] = params.url.slice('txphoto://'.length).split('/');
+  const res = await fetch(txPhotoUrl(key, +z, +x, +y), { signal: abort.signal });
+  if (!res.ok) throw new Error('Photo not available: ' + res.status);
+  return { data: await res.arrayBuffer() };
+});
+const txSource = (key, minzoom, maxzoom) => ({ type: 'raster', tiles: [`txphoto://${key}/{z}/{x}/{y}`], tileSize: 512, minzoom, maxzoom, attribution: TX_PHOTOS[key].credit });
 
 export const homeView = {
   center: saved?.center || [-95.45, 30.55], // Sam Houston National Forest
@@ -27,7 +36,7 @@ const start = introWanted
 export const map = new maplibregl.Map({
   container: 'map',
   ...start,
-  maxZoom: 19,
+  maxZoom: 21,
   maxPitch: 75,
   attributionControl: false,
   style: {
@@ -39,6 +48,9 @@ export const map = new maplibregl.Map({
       esri: { type: 'raster', tiles: [ESRI], tileSize: 256, maxzoom: 19, attribution: 'Satellite: Esri, Vantor, Earthstar Geographics, GIS User Community' },
       usgsimg: { type: 'raster', tiles: [USGS.usgsimg + '/{z}/{y}/{x}'], tileSize: 256, maxzoom: IMG_MAX, attribution: 'Offline satellite: USGS The National Map / USDA NAIP' },
       usgstopo: { type: 'raster', tiles: [USGS.usgstopo + '/{z}/{y}/{x}'], tileSize: 256, maxzoom: TOPO_MAX, attribution: 'Topo: USGS The National Map' },
+      tx22: txSource('tx22', 11, 17),
+      tx15: txSource('tx15', 11, 17),
+      hd: txSource('tx22', SHARP_Z, SHARP_Z), // the saved "extra sharp" photos, used with no signal
       // Ground heights. Two copies of the same pictures: one shapes the 3D ground, one draws the hill shading.
       dem: { type: 'raster-dem', tiles: [DEM_URL + '/{z}/{x}/{y}.png'], encoding: 'terrarium', tileSize: 256, maxzoom: DEM_MAX, attribution: demAttribution },
       demShade: { type: 'raster-dem', tiles: [DEM_URL + '/{z}/{x}/{y}.png'], encoding: 'terrarium', tileSize: 256, maxzoom: DEM_MAX },
@@ -66,6 +78,9 @@ export const map = new maplibregl.Map({
       { id: 'bg', type: 'background', paint: { 'background-color': ['interpolate', ['linear'], ['zoom'], 3, '#e9eff4', 6, '#0d1210'] } },
       { id: 'usgsimg', type: 'raster', source: 'usgsimg', layout: { visibility: 'none' }, paint: { 'raster-opacity': 0, 'raster-opacity-transition': fade } },
       { id: 'esri', type: 'raster', source: 'esri', layout: { visibility: 'none' }, paint: { 'raster-opacity': 0, 'raster-opacity-transition': fade } },
+      { id: 'hd', type: 'raster', source: 'hd', layout: { visibility: 'none' }, paint: { 'raster-opacity': 0, 'raster-opacity-transition': fade } },
+      { id: 'tx22', type: 'raster', source: 'tx22', layout: { visibility: 'none' }, paint: { 'raster-opacity': 0, 'raster-opacity-transition': fade } },
+      { id: 'tx15', type: 'raster', source: 'tx15', layout: { visibility: 'none' }, paint: { 'raster-opacity': 0, 'raster-opacity-transition': fade } },
       { id: 'usgstopo', type: 'raster', source: 'usgstopo', layout: { visibility: 'none' }, paint: { 'raster-opacity': 0, 'raster-opacity-transition': fade } },
       { id: 'hillshade', type: 'hillshade', source: 'demShade',
         paint: { 'hillshade-method': 'igor', 'hillshade-illumination-anchor': 'map', 'hillshade-illumination-direction': 315, 'hillshade-illumination-altitude': 35,
@@ -149,7 +164,7 @@ window.huntingMap = map; // handy for testing
 map.addControl(new maplibregl.ScaleControl({ unit: 'imperial' }), 'bottom-left');
 map.addControl(new maplibregl.AttributionControl({ compact: true, customAttribution: 'Hunting Map' }), 'bottom-right');
 
-export const BASE_LAYERS = ['usgsimg', 'esri', 'usgstopo'];
+export const BASE_LAYERS = ['usgsimg', 'esri', 'hd', 'tx22', 'tx15', 'usgstopo'];
 export const ROAD_LAYERS = ['roads-trail', 'roads-ohv', 'roads-road'];
 
 // Runs fn once the map has finished setting up (right away if it already has).

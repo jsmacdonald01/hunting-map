@@ -37,6 +37,16 @@ export function toast(text) {
 }
 on('toast', toast);
 
+// ---------- Street View and Google Maps links for a spot ----------
+export function spotLinks(lat, lng) {
+  const at = `${lat.toFixed(6)},${lng.toFixed(6)}`;
+  return `<div class="row links">
+      <a class="btnlink" id="link-street" href="https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${at}" target="_blank" rel="noopener">Street View</a>
+      <a class="btnlink" href="https://www.google.com/maps/search/?api=1&query=${at}" target="_blank" rel="noopener">Google Maps</a>
+    </div>
+    <div class="note">Street View opens in Google Maps. It only has pictures along roads, and needs signal.</div>`;
+}
+
 // ---------- Sharing ----------
 export async function shareThing({ title, text, file }) {
   try {

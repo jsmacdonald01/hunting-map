@@ -4,7 +4,7 @@
 import { map, whenReady } from './map.js';
 import { db } from './db.js';
 import { $, esc, state, on, emit } from './core.js';
-import { openSheet, closeSheet, setHighlight } from './ui.js';
+import { openSheet, closeSheet, setHighlight, spotLinks } from './ui.js';
 import { startLayers, checkOnline, closeLayersPanel, sightingHtml, roadHtml, publicHtml } from './layers.js';
 import { addCountyLayers, updateParcelLayers, savedParcelLayers, inBbox, identifyOnline, parcelHtml } from './parcels.js';
 import { addPinIcons, refreshPins, showPin, placing, pinKind } from './pins.js';
@@ -61,7 +61,7 @@ map.on('click', async e => {
     html = state.online ? '<h2>Zoom in to see property info</h2>'
       : '<h2>No saved property info here</h2><div class="note">This spot isn’t in a downloaded county. Use Menu → Download maps while you have signal.</div>';
   }
-  openSheet(html + extra + publicHtml(pub));
+  openSheet(html + extra + publicHtml(pub) + spotLinks(e.lngLat.lat, e.lngLat.lng));
 });
 
 // ---------- Measure ----------

@@ -2,7 +2,7 @@
 import { map } from './map.js';
 import { db } from './db.js';
 import { $, $$, esc, newId, emit, PIN_TYPES } from './core.js';
-import { openSheet, closeSheet, shareThing } from './ui.js';
+import { openSheet, closeSheet, shareThing, spotLinks } from './ui.js';
 
 export const pinKind = p => PIN_TYPES[p.type] || PIN_TYPES.other;
 
@@ -119,7 +119,8 @@ export async function showPin(pinId) {
     <div id="pin-scent" class="note"></div>
     <div class="note">${p.lat.toFixed(5)}, ${p.lng.toFixed(5)} · ${new Date(p.created).toLocaleString()}</div>
     <div class="row"><button class="primary" id="pin-go">Take me here</button><button id="pin-share">Share</button>
-      <button id="pin-edit">Edit</button><button class="danger" id="pin-del">Delete</button></div>`);
+      <button id="pin-edit">Edit</button><button class="danger" id="pin-del">Delete</button></div>
+    ${spotLinks(p.lat, p.lng)}`);
   $$('[data-photo]').forEach(img => img.onclick = () => window.open(img.src, '_blank'));
   $('#pin-go').onclick = () => { closeSheet(); emit('goto', p); };
   $('#pin-share').onclick = () => shareThing({ title: p.name,

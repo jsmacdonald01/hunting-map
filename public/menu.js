@@ -32,6 +32,7 @@ export async function renderMenu(tab = menuTab) {
 // ---------- Downloads ----------
 let available = [];
 let activeDownload = null;
+let wantSharp = localStorage.getItem('dlSharp') === '1';
 
 async function downloadsHtml() {
   try { available = await (await fetch('data/counties.json')).json(); } catch { /* keep last list */ }
@@ -43,20 +44,23 @@ async function downloadsHtml() {
     const busy = activeDownload?.key === c.key;
     const needs3d = h && !h.terrain;
     return `<div class="item"><div class="grow"><b>${esc(c.name)} County</b>
-        <small>${c.parcels.toLocaleString()} properties · ${c.blankOwners.toLocaleString()} without owner names · about ${fmtBytes(estimateBytes(c))}</small>
-        <small>${h ? `Downloaded ${new Date(h.date).toLocaleDateString()}${h.failed ? ` · ${h.failed} pieces missed — tap Update` : ''}${needs3d ? ' · tap Update to add the 3D ground for offline' : ''}` : 'Not downloaded'}</small>
+        <small>${c.parcels.toLocaleString()} properties · ${c.blankOwners.toLocaleString()} without owner names · about ${fmtBytes(estimateBytes(c, wantSharp))}</small>
+        <small>${h ? `Downloaded ${new Date(h.date).toLocaleDateString()}${h.failed ? ` · ${h.failed} pieces missed — tap Update` : ''}${needs3d ? ' · tap Update to add the 3D ground for offline' : ''}${h.sharp ? ' · extra sharp' : wantSharp ? ' · tap Update to add extra sharp photos' : ''}` : 'Not downloaded'}</small>
         ${busy ? `<progress id="dl-prog" max="1" value="0"></progress><small id="dl-text">Starting…</small>` : ''}</div>
       ${busy ? '<button id="dl-stop">Stop</button>'
-        : `<button data-dl="${c.key}" ${activeDownload ? 'disabled' : ''} class="${h && !needs3d ? '' : 'primary'}">${h ? 'Update' : 'Download'}</button>
+        : `<button data-dl="${c.key}" ${activeDownload ? 'disabled' : ''} class="${h && !needs3d && !(wantSharp && !h.sharp) ? '' : 'primary'}">${h ? 'Update' : 'Download'}</button>
            ${h ? `<button data-show="${c.key}">Show</button><button data-rm="${c.key}" class="danger">Remove</button>` : ''}`}</div>`;
   }).join('') || '<div class="note">Couldn’t load the county list. Check your signal and try again.</div>';
   return `<div class="note">Downloads save satellite, topo, the 3D ground, property lines and owner names onto this device so they work with no signal.
     Use Wi-Fi if you can, and keep the app open until it finishes.</div>
+    <label class="switch"><input type="checkbox" id="dl-sharp" ${wantSharp ? 'checked' : ''} ${activeDownload ? 'disabled' : ''}> Extra sharp offline photos</label>
+    <div class="note">Adds the state's 2022 aerial photo at twice the detail when you zoom in with no signal. Roughly triples each county's size and takes a good while longer.</div>
     ${rows}<div class="note">${storage}</div>`;
 }
 
 function wireDownloads() {
   $$('[data-dl]').forEach(b => b.onclick = () => startDownload(b.dataset.dl));
+  $('#dl-sharp').onchange = e => { wantSharp = e.target.checked; localStorage.setItem('dlSharp', wantSharp ? '1' : '0'); renderMenu('download'); };
   $$('[data-show]').forEach(b => b.onclick = () => {
     const c = state.counties.find(x => x.id === b.dataset.show);
     if (c) { closeSheet(); flyToBounds(c.bbox); }
@@ -84,7 +88,7 @@ async function startDownload(key) {
       const prog = $('#dl-prog'), text = $('#dl-text');
       if (prog) { prog.max = total; prog.value = done; }
       if (text) text.textContent = `${Math.round(done / total * 100)}% · ${fmtBytes(bytes)} saved · ${Math.round((Date.now() - t0) / 1000)}s`;
-    }, ctl.signal);
+    }, ctl.signal, { sharp: wantSharp });
     state.counties = await db.all('counties');
     addCountyLayers(rec);
     updateParcelLayers();
@@ -172,6 +176,7 @@ function aboutHtml() {
     <div class="note"><b>Satellite (with signal):</b> Esri World Imagery — Esri, Vantor, Earthstar Geographics, GIS User Community.<br>
     <b>Satellite (offline):</b> USGS The National Map, USDA NAIP imagery (public domain). Slightly less sharp than Esri.<br>
     <b>Topo:</b> USGS The National Map (public domain).<br>
+    <b>Texas photos (summer 2022, winter 2015, and extra sharp offline):</b> Texas Geographic Information Office; USDA NAIP; Texas Orthoimagery Program.<br>
     <b>3D ground and hill shading:</b> Terrain Tiles on AWS Open Data (Mapzen), built from USGS 3DEP elevation data.<br>
     <b>Property lines and owners:</b> Texas Geographic Information Office (TxGIO), StratMap Land Parcels, from county appraisal districts.<br>
     <b>Public hunting areas and seasons:</b> Texas Parks and Wildlife Department.<br>

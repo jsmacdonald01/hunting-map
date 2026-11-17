@@ -1,5 +1,5 @@
 // Offline helper. Keeps the app itself and every downloaded county on the device.
-const SHELL = 'shell-v4';
+const SHELL = 'shell-v5';
 const TILES = 'tiles-v1'; // downloaded map pictures and property lines (filled by the Download panel)
 
 const SHELL_FILES = [
@@ -26,10 +26,12 @@ self.addEventListener('activate', e => {
 const isUsgsTile = u => u.hostname === 'basemap.nationalmap.gov' && u.pathname.includes('/MapServer/tile/');
 // Ground heights for the 3D view (saved with each downloaded county).
 const isTerrainTile = u => u.hostname === 's3.amazonaws.com' && u.pathname.startsWith('/elevation-tiles-prod/');
+// Texas state aerial photos (saved by the "extra sharp" download). Each picture's address ends in its exact square.
+const isTxPhoto = u => u.hostname === 'imagery.geographic.texas.gov' && u.pathname.endsWith('/exportImage');
 const EMPTY = () => new Response(new Uint8Array(0), { status: 200, headers: { 'Content-Type': 'application/x-protobuf' } });
 
-async function fromTiles(req, fallback) {
-  const hit = await caches.match(req, { cacheName: TILES, ignoreSearch: true });
+async function fromTiles(req, fallback, exact = false) {
+  const hit = await caches.match(req, { cacheName: TILES, ignoreSearch: !exact });
   if (hit) return hit;
   try { return await fetch(req); } catch { return fallback(); }
 }
@@ -53,6 +55,7 @@ self.addEventListener('fetch', e => {
   if (req.method !== 'GET') return;
   const u = new URL(req.url);
   if (isUsgsTile(u) || isTerrainTile(u)) return e.respondWith(fromTiles(req, () => new Response('', { status: 404 })));
+  if (isTxPhoto(u)) return e.respondWith(fromTiles(req, () => new Response('', { status: 404 }), true));
   if (u.origin !== self.location.origin) return; // Esri, live property lines: always live
   if (u.pathname.includes('/data/parcels/')) return e.respondWith(fromTiles(req, EMPTY));
   if (u.pathname.includes('/data/counties/')) return e.respondWith(fromTiles(req, () => new Response('{}', { status: 503 })));

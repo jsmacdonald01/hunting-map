@@ -49,6 +49,23 @@ check('Hybrid shows topo lines over satellite', await map(() => { const m = wind
 await page.click('[data-base="sat"]');
 await page.waitForTimeout(2600);
 check('Back to satellite hides topo', await map(() => window.huntingMap.getLayoutProperty('usgstopo', 'visibility') === 'none'));
+await page.click('[data-base="tx15"]');
+await page.waitForTimeout(1500);
+check('Winter photo type turns on the Texas leaf-off layer', await map(() => window.huntingMap.getPaintProperty('tx15', 'raster-opacity') === 1 && window.huntingMap.getLayoutProperty('tx15', 'visibility') === 'visible'));
+await page.click('[data-base="sat"]');
+await page.waitForTimeout(2600);
+check('Zoom now goes two steps closer', await map(() => window.huntingMap.getMaxZoom() === 21));
+// Sharp offline photos: one saved square must come back with the internet off (checked at the end).
+const sharp = await page.evaluate(async () => {
+  const o = await import('./offline.js');
+  const url = o.txPhotoUrl('tx22', 16, 15452, 26912);
+  const res = await fetch(url);
+  const type = res.headers.get('content-type');
+  const blob = await res.blob();
+  await (await caches.open(o.TILES)).put(url, new Response(blob, { headers: { 'Content-Type': type } }));
+  return { url, type, size: blob.size };
+});
+check('Texas photo server returns a sharp picture', /image\/jpe?g/.test(sharp.type) && sharp.size > 5000, `${sharp.type} ${sharp.size} bytes`);
 await page.click('#btn-layers');
 
 // ---------- Time of day ----------
@@ -78,6 +95,7 @@ await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
 await page.waitForSelector('#pin-go');
 await page.waitForTimeout(500);
 const scent = await map(async () => { const d = await window.huntingMap.getSource('scent').getData(); return (d.features || [d]).filter(f => f.geometry).length; });
+check('Pin card has a Street View button', /map_action=pano&viewpoint=30\.55/.test(await page.locator('#link-street').getAttribute('href')));
 check('Scent fan draws from the selected pin', scent >= 1, `${scent} shapes; ${(await page.locator('#pin-scent').innerText()).slice(0, 70)}`);
 if (process.env.STAGE !== 'b') {
   check('Selected pin gets a ring', await page.locator('.pin-ring').count() === 1);
@@ -137,6 +155,8 @@ await page.reload();
 await ready();
 await page.waitForTimeout(4000);
 check('App opens offline with the new look', await page.evaluate(() => !!document.querySelector('#tools') && window.huntingMap.loaded()));
+const back = await page.evaluate(async url => { try { const r = await fetch(url); return r.ok ? (await r.blob()).size : r.status; } catch (e) { return String(e); } }, sharp.url);
+check('A saved sharp picture is served with no signal', back === sharp.size, String(back));
 check('Wind falls back to the saved forecast offline', (await page.locator('#wind-label').innerText()).trim().length > 0);
 
 check('No page errors', errors.length === 0, errors.join(' | ').slice(0, 300));
