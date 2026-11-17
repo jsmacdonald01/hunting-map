@@ -69,12 +69,20 @@ function showBlocked(err) {
     <div class="note"><b>Works in Safari but not from the home screen icon?</b> Press and hold the Hunting Map icon and remove it.
     Open the site in Safari, tap the locate button and allow location there, then use Share → Add to Home Screen again.</div>
     <div class="note">Home screen apps use Safari's location setting, which is why Hunting Map isn't listed by name.</div>
-    <div class="note dim">Phone said: ${err?.message ? String(err.message).replace(/[<>&]/g, '') : 'permission denied'} (code ${err?.code ?? '?'})</div>`);
+    <div class="note dim" id="gps-diag">Phone said: ${err?.message ? String(err.message).replace(/[<>&]/g, '') : 'permission denied'} (code ${err?.code ?? '?'})</div>`);
+  // Extra clues for tracking the problem down: home-screen app or Safari, what the phone has on file, and how fast it said no.
+  const standalone = navigator.standalone === true || matchMedia('(display-mode: standalone)').matches;
+  const fast = Date.now() - askedAt < 1500 ? 'instantly (no question shown)' : `after ${Math.round((Date.now() - askedAt) / 1000)}s`;
+  Promise.resolve(navigator.permissions?.query({ name: 'geolocation' })).then(p => p?.state, () => 'unknown').then(state => {
+    const d = document.querySelector('#gps-diag');
+    if (d) d.textContent += ` · ${standalone ? 'home-screen app' : 'browser'} · on file: ${state || 'unknown'} · refused ${fast}`;
+  });
 }
+let askedAt = 0;
 
 function start() {
   if (!navigator.geolocation) return toast('This device can’t share its location.');
-  follow = true; firstFix = true;
+  follow = true; firstFix = true; askedAt = Date.now();
   // Ask for location first, in the same instant as the tap. (Asking for the compass first and waiting for that
   // answer can make an iPhone drop the location question.)
   let denied = 0;
