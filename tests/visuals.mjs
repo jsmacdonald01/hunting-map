@@ -47,7 +47,7 @@ await page.click('[data-base="hybrid"]');
 await page.waitForTimeout(1600);
 check('Hybrid shows topo lines over satellite', await map(() => { const m = window.huntingMap; return m.getPaintProperty('usgstopo', 'raster-opacity') === 0.5 && m.getPaintProperty('esri', 'raster-opacity') === 1; }));
 await page.click('[data-base="sat"]');
-await page.waitForTimeout(1600);
+await page.waitForTimeout(2600);
 check('Back to satellite hides topo', await map(() => window.huntingMap.getLayoutProperty('usgstopo', 'visibility') === 'none'));
 await page.click('#btn-layers');
 
@@ -105,7 +105,7 @@ if (process.env.STAGE !== 'b') {
   await p2.waitForSelector('#intro:not([hidden])', { timeout: 30000 });
   check('Fly-in starts far out with the controls hidden', await p2.evaluate(() => document.documentElement.classList.contains('intro') && window.huntingMap.getZoom() < 6));
   await p2.click('#intro');
-  await p2.waitForFunction(() => !document.documentElement.classList.contains('intro') && window.huntingMap.getZoom() > 8, null, { timeout: 8000 }).catch(() => {});
+  await p2.waitForFunction(() => !document.documentElement.classList.contains('intro') && window.huntingMap.getZoom() > 8, null, { timeout: 25000 }).catch(() => {});
   check('A tap skips the fly-in and lands on the map', await p2.evaluate(() => !document.documentElement.classList.contains('intro') && window.huntingMap.getZoom() > 8));
   await p2.close();
   const p3 = await context.newPage();

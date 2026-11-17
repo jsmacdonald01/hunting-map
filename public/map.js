@@ -1,6 +1,6 @@
 /* global maplibregl */
 // Builds the map itself: every picture layer, line layer and label, in drawing order (bottom first).
-import { ESRI, TXGIO, ANIMALS, ACCENT, EMPTY } from './core.js';
+import { ESRI, TXGIO, ANIMALS, ACCENT, EMPTY, introWanted } from './core.js';
 import { USGS, IMG_MAX, TOPO_MAX, DEM_URL, DEM_MAX } from './offline.js';
 
 const saved = JSON.parse(localStorage.getItem('view') || 'null');
@@ -18,17 +18,21 @@ export const homeView = {
   firstVisit: !saved,
 };
 
+// The round-earth view used by the opening fly-in. It flattens into the normal map between zoom 5.5 and 7.5.
+export const GLOBE = { type: ['interpolate', ['linear'], ['zoom'], 5.5, 'vertical-perspective', 7.5, 'mercator'] };
+const start = introWanted
+  ? { center: [-98.5, 39], zoom: 1.4, bearing: 0, pitch: 0 } // out in space; intro.js flies in from here
+  : { center: homeView.center, zoom: homeView.zoom, bearing: homeView.bearing, pitch: localStorage.getItem('view3d') === '0' ? 0 : homeView.pitch };
+
 export const map = new maplibregl.Map({
   container: 'map',
-  center: homeView.center,
-  zoom: homeView.zoom,
-  bearing: homeView.bearing,
-  pitch: localStorage.getItem('view3d') === '0' ? 0 : homeView.pitch,
+  ...start,
   maxZoom: 19,
   maxPitch: 75,
   attributionControl: false,
   style: {
     version: 8,
+    ...(introWanted ? { projection: GLOBE } : {}),
     glyphs: new URL('fonts/', location.href).href + '{fontstack}/{range}.pbf',
     sky: { 'sky-color': '#6fb1f2', 'horizon-color': '#dcecff', 'fog-color': '#e6f0fa', 'sky-horizon-blend': 0.6, 'horizon-fog-blend': 0.7, 'fog-ground-blend': 0.6, 'atmosphere-blend': ['interpolate', ['linear'], ['zoom'], 0, 1, 6, 0.6, 9, 0] },
     sources: {
@@ -58,7 +62,8 @@ export const map = new maplibregl.Map({
       pins: { type: 'geojson', data: EMPTY },
     },
     layers: [
-      { id: 'bg', type: 'background', paint: { 'background-color': '#0d1210' } },
+      // Dark behind the map; icy white from far out, which caps the poles where the satellite pictures stop.
+      { id: 'bg', type: 'background', paint: { 'background-color': ['interpolate', ['linear'], ['zoom'], 3, '#e9eff4', 6, '#0d1210'] } },
       { id: 'usgsimg', type: 'raster', source: 'usgsimg', layout: { visibility: 'none' }, paint: { 'raster-opacity': 0, 'raster-opacity-transition': fade } },
       { id: 'esri', type: 'raster', source: 'esri', layout: { visibility: 'none' }, paint: { 'raster-opacity': 0, 'raster-opacity-transition': fade } },
       { id: 'usgstopo', type: 'raster', source: 'usgstopo', layout: { visibility: 'none' }, paint: { 'raster-opacity': 0, 'raster-opacity-transition': fade } },

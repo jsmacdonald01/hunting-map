@@ -53,7 +53,7 @@ const canvas = $('#wind'), ctx = canvas.getContext('2d');
 let W = 0, H = 0, parts = [], moving = false, dirty = false;
 function size() {
   W = canvas.width = innerWidth; H = canvas.height = innerHeight; // plain 1x pixels: soft streaks don't need more, and it's 4-9x less work
-  const n = Math.max(50, Math.min(200, Math.round(W * H / 5200)));
+  const n = Math.max(50, Math.min(200, Math.round(W * H / 8000)));
   parts = Array.from({ length: n }, spawn);
 }
 function spawn() { return { x: Math.random() * W, y: Math.random() * H, age: 0, life: 1.5 + Math.random() * 3 }; }
@@ -68,11 +68,11 @@ function step(_t, dt) {
   if (!shown || !wind || wind.mph < 1 || moving) return clear();
   // Wind blows TO the opposite of where it comes from. Turn that into a direction on screen.
   const a = (wind.from + 180 - map.getBearing()) * Math.PI / 180;
-  const speed = 16 + wind.mph * 6.5;
+  const speed = 14 + wind.mph * 4.5;
   const vx = Math.sin(a) * speed * dt, vy = -Math.cos(a) * speed * dt * Math.cos(map.getPitch() * Math.PI / 180 * .8);
   // Fade what's already drawn, so each streak leaves a short tail.
   ctx.globalCompositeOperation = 'destination-in';
-  ctx.fillStyle = 'rgba(0,0,0,.94)';
+  ctx.fillStyle = 'rgba(0,0,0,.9)';
   ctx.fillRect(0, 0, W, H);
   ctx.globalCompositeOperation = 'source-over';
   ctx.beginPath();
@@ -83,7 +83,7 @@ function step(_t, dt) {
     ctx.moveTo(x0, y0); ctx.lineTo(p.x, p.y);
   }
   ctx.lineWidth = 1.3; ctx.lineCap = 'round';
-  ctx.strokeStyle = 'rgba(255,255,255,.34)';
+  ctx.strokeStyle = 'rgba(255,255,255,.3)';
   ctx.stroke();
   dirty = true;
 }

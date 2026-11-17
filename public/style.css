@@ -215,6 +215,7 @@ table.wx th, table.wx td { text-align: left; padding: 4px; border-bottom: 1px so
 .intro-skip { margin-top: 12px; color: var(--muted); font-size: 14px; letter-spacing: .12em; text-transform: uppercase; animation: title-in 1.4s .6s var(--ease) both; }
 #topbar, #rail, #tools, .maplibregl-control-container { transition: opacity .6s, transform .6s var(--ease); }
 html.intro #topbar, html.intro #rail, html.intro .maplibregl-control-container { opacity: 0; pointer-events: none; }
+html.intro #wind, html.intro #mood { opacity: 0 !important; }
 html.intro #tools { opacity: 0; transform: translateY(30px); pointer-events: none; }
 @keyframes title-in { from { opacity: 0; letter-spacing: .5em; } }
 

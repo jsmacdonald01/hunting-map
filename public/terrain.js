@@ -55,6 +55,7 @@ map.on('rotate', turnNeedle);
 $('#btn-compass').onclick = () => map.easeTo({ bearing: 0, duration: reducedMotion ? 0 : 600, essential: true });
 
 map.on('moveend', () => {
+  if (document.documentElement.classList.contains('intro')) return; // don't remember the view from space
   localStorage.setItem('view', JSON.stringify({ center: map.getCenter().toArray(), zoom: map.getZoom(), bearing: map.getBearing(), pitch: map.getPitch() }));
 });
 on('graphics', () => { if (view.ready) applyMesh(); });

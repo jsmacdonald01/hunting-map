@@ -16,6 +16,8 @@ import { lastFix } from './gps.js';
 import './menu.js';
 import './daylight.js';
 import './wind.js';
+import './effects.js';
+import { runIntro, introWanted } from './intro.js';
 
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
 navigator.storage?.persist?.();
@@ -122,5 +124,7 @@ whenReady(async () => {
   await refreshPins();
   await refreshTracks();
   checkOnline();
+  if (introWanted) await runIntro();
   start3d({ move: false });
 });
+on('replay-intro', async () => { await runIntro({ replay: true }); start3d({ move: false }); });

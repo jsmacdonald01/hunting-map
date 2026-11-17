@@ -44,3 +44,19 @@ export const on = (name, fn) => board.addEventListener(name, e => fn(e.detail));
 export const emit = (name, detail) => board.dispatchEvent(new CustomEvent(name, { detail }));
 
 export const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// ---------- Should the opening fly-in play? ----------
+// Only on a fresh start: not when you flip back to the app within half an hour, and never under automated tests.
+const lastSeen = Number(localStorage.getItem('lastSeen') || 0);
+const markSeen = () => { try { localStorage.setItem('lastSeen', Date.now()); } catch { /* storage full */ } };
+addEventListener('pagehide', markSeen);
+document.addEventListener('visibilitychange', markSeen);
+setInterval(() => { if (document.visibilityState === 'visible') markSeen(); }, 60000);
+export const introWanted = /[?&]intro=1/.test(location.search) || (
+  !reducedMotion && !navigator.webdriver && navigator.onLine
+  && localStorage.getItem('intro') !== '0' && localStorage.getItem('gfx') !== 'lite'
+  && Date.now() - lastSeen > 30 * 60000);
+// A tap anywhere on the title screen skips the fly-in, even a tap made before the map has finished loading.
+export const introTap = { skipped: false, onSkip: null };
+document.querySelector('#intro').addEventListener('pointerdown', () => { introTap.skipped = true; introTap.onSkip?.(); });
+if (introWanted) { document.documentElement.classList.add('intro'); document.querySelector('#intro').hidden = false; }

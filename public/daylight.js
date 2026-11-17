@@ -56,14 +56,16 @@ function paint() {
     last = key;
     map.setPaintProperty('hillshade', 'hillshade-illumination-direction', up ? Math.round(sun.azimuth) : 315);
     map.setPaintProperty('hillshade', 'hillshade-illumination-altitude', clamp(up ? sun.altitude : 30, 9, 50));
-    map.setPaintProperty('hillshade', 'hillshade-exaggeration', look.shade * baseShade * (1 - dull * .6));
+    // From far out (the globe) there's no shading or color wash: both fade in as you come down to map height.
+    const near = v => ['interpolate', ['linear'], ['zoom'], 5, 0, 8, v];
+    map.setPaintProperty('hillshade', 'hillshade-exaggeration', near(look.shade * baseShade * (1 - dull * .6)));
     map.setPaintProperty('hillshade', 'hillshade-shadow-color', css(look.shadow));
     map.setPaintProperty('hillshade', 'hillshade-accent-color', css([look.shadow[0], look.shadow[1], look.shadow[2], look.shadow[3] * .5]));
     map.setPaintProperty('hillshade', 'hillshade-highlight-color', css(mix(look.light, [200, 205, 210, look.light[3] * .5], dull)));
     const wet = mood === 'rain' ? [70, 82, 96, Math.max(look.tint[3], .3)] : [GREY[0], GREY[1], GREY[2], Math.max(look.tint[3], .16)];
     const tint = mix(look.tint, wet, dull ? .9 : 0);
     map.setPaintProperty('tint', 'background-color', solid(tint));
-    map.setPaintProperty('tint', 'background-opacity', tint[3]);
+    map.setPaintProperty('tint', 'background-opacity', near(tint[3]));
     map.setSky({
       'sky-color': solid(mix(look.sky, GREY, dull * .75)), 'horizon-color': solid(mix(look.horizon, GREY, dull * .6)), 'fog-color': solid(mix(look.fog, GREY, dull * .5)),
       'sky-horizon-blend': .6, 'horizon-fog-blend': .7, 'fog-ground-blend': mood === 'fog' ? .15 : mood === 'rain' ? .4 : .6,
