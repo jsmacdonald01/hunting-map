@@ -73,6 +73,14 @@ Refresh sightings and roads with `node scripts/prepare-extras.mjs` (about 10 min
   has pictures along roads, and needs signal.
 - The state's extra-sharp 6-inch photos don't cover Montgomery, Walker or San Jacinto counties.
 
+**Small things (2026-11-17)**
+- Every switch in **Layers** remembers how you left it, even after closing the app. There are now switches for
+  **My pins** and **My paths** too.
+- The blue wash over public hunting land fades out as you zoom in, so you can see the ground. Outlines stay.
+- If the phone refuses location, the locate button shows the exact iPhone settings to check.
+- Camps, parking, info stations, boat ramps and gates on public land are square badges (tent, P, i…), so they
+  can't be mistaken for the round blue "you are here" dot.
+
 **Menu → Display**
 - **Graphics:** Auto (eases off by itself on a slow phone, low battery or Low Power Mode), Full, or Lite.
 - Night mode switch, and a switch to turn the opening fly-in off.

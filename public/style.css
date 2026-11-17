@@ -105,6 +105,8 @@ select option { background: #151b17; color: var(--ink); }
 .chip i, i.dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; border: 1px solid #000; margin-right: 4px; }
 .legend { display: flex; flex-direction: column; gap: 5px; font-size: 14px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 10px; }
 .sw { display: inline-block; width: 14px; height: 14px; margin-right: 8px; vertical-align: -2px; border: 2px solid; }
+.badge { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 5px; border: 1.5px solid #fff; background: #3e2a1e; color: #fff; font-style: normal; font-size: 11px; font-weight: 700; margin: 0 5px 0 0; vertical-align: -4px; }
+.badge + .badge, .legend span .badge:not(:first-child) { margin-left: 10px; }
 .sw.boundary { border-color: #1e90ff; background: rgba(30, 144, 255, .25); }
 .sw.area { border-color: #74c0fc; }
 .sw.nohunt { border-color: #e03131; background: rgba(224, 49, 49, .4); }
@@ -163,6 +165,9 @@ progress { width: 100%; height: 10px; accent-color: var(--accent); }
 .btnlink { display: inline-flex; align-items: center; min-height: 44px; padding: 10px 16px; border-radius: 12px; border: 1px solid var(--line); background: var(--field);
   color: var(--ink); font-weight: 700; text-decoration: none; }
 .row.links { margin-top: 14px; }
+
+#sheet ol.steps { padding-left: 22px; margin: 8px 0; }
+#sheet ol.steps li { margin: 8px 0; }
 
 /* Today card */
 #sheet .big { font-size: 20px; font-weight: 700; margin: 4px 0; }

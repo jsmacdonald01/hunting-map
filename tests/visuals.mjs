@@ -111,6 +111,16 @@ if (process.env.STAGE !== 'b') {
   check('Locate button shows the GPS dot', await page.locator('.gps .dot').count() === 1);
   await page.click('#btn-locate'); // following -> off
 
+  // A phone that refuses location gets clear steps, not a dead button.
+  const blockedCtx = await browser.newContext({ viewport: { width: 430, height: 900 } }); // no location permission granted
+  const p5 = await blockedCtx.newPage();
+  await p5.goto(URL);
+  await p5.waitForFunction(() => window.huntingMap?.loaded(), null, { timeout: 90000 });
+  await p5.click('#btn-locate');
+  await p5.waitForFunction(() => /blocking location/i.test(document.querySelector('#sheet-body')?.innerText || ''), null, { timeout: 15000 }).catch(() => {});
+  check('Refused location shows the settings steps', /Safari Websites/.test(await p5.locator('#sheet-body').innerText()) && !(await p5.locator('#btn-locate').getAttribute('class')).includes('on'));
+  await blockedCtx.close();
+
   // ---------- Night mode ----------
   await page.click('#btn-night');
   check('Night button turns on red mode', await page.evaluate(() => document.documentElement.classList.contains('night') && !document.querySelector('#nightveil').hidden));
@@ -131,6 +141,52 @@ if (process.env.STAGE !== 'b') {
   await p3.waitForFunction(() => window.huntingMap && !document.documentElement.classList.contains('intro') && window.huntingMap.getZoom() > 8, null, { timeout: 40000 }).catch(() => {});
   check('Fly-in finishes by itself', await p3.evaluate(() => !document.documentElement.classList.contains('intro') && window.huntingMap.getZoom() > 8 && !!window.huntingMap.getTerrain()));
   await p3.close();
+}
+
+// ---------- Public land: blue wash far out, clear ground close in (still tappable) ----------
+{
+  // Stand on the edge of a public area (a corner of its outline), so part of the screen is inside it.
+  const corner = await map(() => {
+    const f = window.huntingMap.querySourceFeatures('public').find(f => f.properties.kind === 'boundary' && f.geometry.type === 'Polygon' && /Sam Houston/.test(f.properties.name));
+    return f && f.geometry.coordinates[0][0];
+  });
+  await page.evaluate(c => window.huntingMap.jumpTo({ center: c, zoom: 15, pitch: 0, bearing: 0 }), corner);
+  await page.waitForTimeout(2500);
+  const pub = await map(() => {
+    const m = window.huntingMap, f = m.queryRenderedFeatures({ layers: ['pub-fill'] }).find(f => f.properties.kind === 'boundary');
+    return { found: !!f, rule: JSON.stringify(m.getPaintProperty('pub-fill', 'fill-opacity')).slice(0, 40) };
+  });
+  // Camps and parking are square badges, not blue dots.
+  const camp = true;
+  await map(() => window.huntingMap.jumpTo({ center: [-95.69066, 30.58554], zoom: 14 })); // a campsite in Sam Houston NF
+  const tent = () => window.huntingMap.hasImage('poi-camp') && window.huntingMap.getLayer('pub-points').type === 'symbol'
+    && window.huntingMap.queryRenderedFeatures({ layers: ['pub-points'] }).some(f => /Camp/.test(f.properties.cls));
+  await page.waitForFunction(tent, null, { timeout: 15000 }).catch(() => {});
+  check('Campsites show a tent badge', camp && await map(tent));
+  check('Public land has no color wash zoomed in but can still be tapped', pub.found && /interpolate/.test(pub.rule), JSON.stringify(pub));
+}
+
+// ---------- Switches stay how you left them after the app restarts ----------
+{
+  await page.click('#btn-layers');
+  for (const id of ['lyr-roads', 'lyr-pins', 'lyr-parcels', 'lyr-wind', 'lyr-sight']) await page.uncheck('#' + id);
+  await page.click('[data-base="topo"]');
+  await page.reload();
+  await ready();
+  await page.waitForTimeout(2500);
+  const kept = await page.evaluate(() => {
+    const m = window.huntingMap, off = id => !document.querySelector('#' + id).checked, hidden = l => m.getLayoutProperty(l, 'visibility') === 'none';
+    return { roads: off('lyr-roads') && hidden('roads-road'), pins: off('lyr-pins') && hidden('pins'), parcels: off('lyr-parcels') && hidden('parcelsLive'),
+      wind: off('lyr-wind'), sightings: off('lyr-sight') && hidden('sight-dots'), stillOn: document.querySelector('#lyr-public').checked && !hidden('pub-fill'),
+      topo: document.querySelector('[data-base="topo"]').classList.contains('on') };
+  });
+  check('Switched-off layers stay off after a restart', Object.values(kept).every(Boolean), JSON.stringify(kept));
+  await page.click('#btn-layers');
+  await page.check('#lyr-pins');
+  await page.reload();
+  await ready();
+  await page.waitForTimeout(1500);
+  check('A layer switched back on stays on', await page.evaluate(() => document.querySelector('#lyr-pins').checked && window.huntingMap.getLayoutProperty('pins', 'visibility') !== 'none'));
 }
 
 // ---------- Reduced motion: no fly-in, no moving effects ----------

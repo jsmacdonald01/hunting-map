@@ -37,10 +37,44 @@ const closePanel = () => { $('#layers').hidden = true; $('#btn-layers').classLis
 export { closePanel as closeLayersPanel };
 $('#btn-layers').onclick = () => { $('#layers').hidden = !$('#layers').hidden; $('#btn-layers').classList.toggle('on', !$('#layers').hidden); };
 
-const showAll = (layers, on) => layers.forEach(l => map.setLayoutProperty(l, 'visibility', on ? 'visible' : 'none'));
-$('#lyr-public').onchange = e => showAll(['pub-fill', 'pub-line', 'pub-label', 'pub-sublabel', 'pub-points', 'pub-points-label'], e.target.checked);
-$('#lyr-parcels').onchange = updateParcelLayers;
-$('#lyr-roads').onchange = e => showAll([...ROAD_LAYERS, 'roads-label'], e.target.checked);
+// Every switch remembers how you left it, so what you turn off stays off the next time the app opens.
+const remembered = (id, fallback = true) => { const v = localStorage.getItem('show:' + id); return v == null ? fallback : v === '1'; };
+const remember = (id, on) => localStorage.setItem('show:' + id, on ? '1' : '0');
+const showAll = (layers, on) => layers.forEach(l => map.getLayer(l) && map.setLayoutProperty(l, 'visibility', on ? 'visible' : 'none'));
+const SWITCHES = {
+  'lyr-public': ['pub-fill', 'pub-line', 'pub-label', 'pub-sublabel', 'pub-points', 'pub-points-label'],
+  'lyr-roads': [...ROAD_LAYERS, 'roads-label'],
+  'lyr-pins': ['pins-glow', 'pins', 'pins-label'],
+  'lyr-tracks': ['tracks-glow', 'tracks'],
+};
+for (const [id, layers] of Object.entries(SWITCHES)) {
+  $('#' + id).checked = remembered(id);
+  $('#' + id).onchange = e => { remember(id, e.target.checked); showAll(layers, e.target.checked); };
+}
+$('#lyr-parcels').checked = remembered('lyr-parcels');
+$('#lyr-parcels').onchange = e => { remember('lyr-parcels', e.target.checked); updateParcelLayers(); };
+
+// ---------- Badges for places on public land ----------
+// Square badges with a picture: tent for camps, P for parking, and so on. Drawn the first time the map asks for one.
+const POI = {
+  camp: ['⛺', '#3e2a1e'], parking: ['P', '#1565c0'], info: ['i', '#37474f'], boat: ['🚤', '#00838f'],
+  gate: ['🚪', '#6d4c41'], water: ['💧', '#0277bd'], blind: ['🔭', '#4e342e'], other: ['•', '#455a64'],
+};
+map.on('styleimagemissing', e => {
+  const kind = e.id.startsWith('poi-') && POI[e.id.slice(4)];
+  if (!kind || map.hasImage(e.id)) return;
+  const [mark, color] = kind, s = 96, c = document.createElement('canvas');
+  c.width = c.height = s;
+  const g = c.getContext('2d');
+  g.beginPath(); g.roundRect(5, 5, s - 10, s - 10, 20);
+  g.fillStyle = color; g.fill();
+  g.lineWidth = 6; g.strokeStyle = '#fff'; g.stroke();
+  g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#fff';
+  const letter = mark.length === 1 && /[A-Za-z•]/.test(mark);
+  g.font = letter ? '700 58px system-ui, sans-serif' : '50px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+  g.fillText(mark, s / 2, s / 2 + 4);
+  map.addImage(e.id, g.getImageData(0, 0, s, s), { pixelRatio: 1 });
+});
 
 // ---------- Online / offline ----------
 function showStatus() {
@@ -151,6 +185,7 @@ export function publicHtml(feats) {
 export function startLayers() {
   applyBase({ instant: true });
   applySightings();
+  for (const [id, layers] of Object.entries(SWITCHES)) showAll(layers, $('#' + id).checked);
   // Roads and trails start see-through and fade in, so they appear to draw themselves.
   for (const l of ROAD_LAYERS) map.setPaintProperty(l, 'line-opacity', 1);
   showStatus();
