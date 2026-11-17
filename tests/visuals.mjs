@@ -115,6 +115,22 @@ if (process.env.STAGE !== 'b') {
   await p3.close();
 }
 
+// ---------- Reduced motion: no fly-in, no moving effects ----------
+if (process.env.STAGE !== 'b') {
+  const calm = await browser.newContext({ viewport: { width: 430, height: 900 }, reducedMotion: 'reduce' });
+  const p4 = await calm.newPage();
+  await p4.goto(URL);
+  await p4.waitForFunction(() => window.huntingMap?.loaded(), null, { timeout: 90000 });
+  await p4.waitForTimeout(4000);
+  const still = await p4.evaluate(() => {
+    const c = document.querySelector('#wind'), d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+    let ink = 0; for (let i = 3; i < d.length; i += 4) if (d[i] > 20) ink++;
+    return { ink, reduced: window.huntingPerf.reduced, intro: document.documentElement.classList.contains('intro') };
+  });
+  check('Reduced motion: no wind streaks and no fly-in', still.reduced && still.ink === 0 && !still.intro, JSON.stringify(still));
+  await calm.close();
+}
+
 // ---------- Offline: the app still opens with no signal ----------
 await context.setOffline(true);
 await page.reload();
