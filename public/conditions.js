@@ -6,19 +6,20 @@ const time = d => d ? d.toLocaleTimeString([], { hour: 'numeric', minute: '2-dig
 const addMin = (d, m) => new Date(d.getTime() + m * 60000);
 const ymd = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const fmtDay = s => new Date(s + 'T12:00').toLocaleDateString([], { month: 'short', day: 'numeric' });
-const ARROWS = { N: 180, NNE: 202.5, NE: 225, ENE: 247.5, E: 270, ESE: 292.5, SE: 315, SSE: 337.5, S: 0, SSW: 22.5, SW: 45, WSW: 67.5, W: 90, WNW: 112.5, NW: 135, NNW: 157.5 };
+export const ARROWS = { N: 180, NNE: 202.5, NE: 225, ENE: 247.5, E: 270, ESE: 292.5, SE: 315, SSE: 337.5, S: 0, SSW: 22.5, SW: 45, WSW: 67.5, W: 90, WNW: 112.5, NW: 135, NNW: 157.5 };
 
 // Wind arrow points the way the wind is blowing TO (so you can keep your scent off the animals).
 const windArrow = dir => `<span class="wind" style="transform:rotate(${ARROWS[dir] ?? 0}deg)">↑</span>`;
 
-async function weather(lat, lng) {
+// Hourly forecast for the next day from the National Weather Service. Keeps the last one for when there's no signal.
+export async function getWeather(lat, lng) {
   const key = 'weather';
   try {
     const ctl = new AbortController();
     setTimeout(() => ctl.abort(), 8000);
     const p = await (await fetch(`https://api.weather.gov/points/${lat.toFixed(3)},${lng.toFixed(3)}`, { signal: ctl.signal })).json();
     const h = await (await fetch(p.properties.forecastHourly, { signal: ctl.signal })).json();
-    const periods = h.properties.periods.slice(0, 12).map(x => ({
+    const periods = h.properties.periods.slice(0, 26).map(x => ({
       t: x.startTime, temp: x.temperature, wind: x.windSpeed, dir: x.windDirection, rain: x.probabilityOfPrecipitation?.value ?? 0, sky: x.shortForecast }));
     const data = { at: Date.now(), place: `${p.properties.relativeLocation?.properties?.city || ''}`, periods };
     try { localStorage.setItem(key, JSON.stringify(data)); } catch { /* storage full */ }
@@ -32,7 +33,7 @@ async function weather(lat, lng) {
 function weatherHtml(w) {
   if (!w) return '<h3>Weather</h3><div class="note">Needs signal. Open this panel once with signal and the last forecast is kept for later.</div>';
   const now = w.periods[0];
-  const rows = w.periods.map(p => `<tr><td>${new Date(p.t).toLocaleTimeString([], { hour: 'numeric' })}</td>
+  const rows = w.periods.slice(0, 12).map(p => `<tr><td>${new Date(p.t).toLocaleTimeString([], { hour: 'numeric' })}</td>
     <td>${p.temp}°</td><td>${windArrow(p.dir)} ${esc(p.dir)} ${esc(p.wind)}</td><td>${p.rain}%</td></tr>`).join('');
   return `<h3>Weather${w.place ? ' near ' + esc(w.place) : ''}</h3>
     <div class="big">${now.temp}° · ${windArrow(now.dir)} ${esc(now.dir)} ${esc(now.wind)} · ${esc(now.sky)}</div>
@@ -84,7 +85,7 @@ async function seasonsHtml(now) {
 
 export async function conditionsHtml(lat, lng, online) {
   const now = new Date();
-  const w = online ? await weather(lat, lng) : await weather(lat, lng).catch(() => null);
+  const w = online ? await getWeather(lat, lng) : await getWeather(lat, lng).catch(() => null);
   return `<h2>Today</h2><div class="note">For the middle of the map${navigator.geolocation ? ' (or your location, if it’s on)' : ''}.</div>`
     + weatherHtml(w) + sunHtml(lat, lng, now) + moonHtml(lat, lng, now) + await seasonsHtml(now);
 }

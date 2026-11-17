@@ -14,6 +14,8 @@ import { conditionsHtml } from './conditions.js';
 import { start3d } from './terrain.js';
 import { lastFix } from './gps.js';
 import './menu.js';
+import './daylight.js';
+import './wind.js';
 
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
 navigator.storage?.persist?.();

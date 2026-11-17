@@ -47,6 +47,7 @@ function pump() {
 }
 function tick(t) {
   raf = 0;
+  if (!canRun()) return;
   for (const j of jobs) {
     if (perf.level < j.minLevel || t - j.last < j.every - 2) continue;
     const dt = j.last ? Math.min(t - j.last, 200) : j.every;
@@ -111,3 +112,4 @@ const paintClasses = () => { root.classList.toggle('fx-lite', perf.level < 2); r
 on('graphics', paintClasses);
 on('idle', paintClasses);
 paintClasses();
+window.huntingPerf = perf; // handy for testing

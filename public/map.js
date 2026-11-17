@@ -67,7 +67,7 @@ export const map = new maplibregl.Map({
                  'hillshade-exaggeration': 0.5, 'hillshade-shadow-color': 'rgba(8,16,28,0.55)', 'hillshade-highlight-color': 'rgba(255,244,214,0.28)', 'hillshade-accent-color': 'rgba(8,16,28,0.3)' } },
       // A see-through wash of color over the ground: gold at dawn, deep blue at night, grey under cloud.
       { id: 'tint', type: 'background', paint: { 'background-color': '#ffffff', 'background-opacity': 0 } },
-      { id: 'parcelsLive', type: 'raster', source: 'parcelsLive', paint: { 'raster-opacity': 0.85 } },
+      { id: 'parcelsLive', type: 'raster', source: 'parcelsLive', paint: { 'raster-opacity': 0.75 } },
       { id: 'pub-fill', type: 'fill', source: 'public', filter: polys,
         paint: { 'fill-color': ['match', ['get', 'kind'], 'nohunt', '#e03131', 'boundary', '#1e90ff', '#74c0fc'],
                  'fill-opacity': ['match', ['get', 'kind'], 'nohunt', 0.35, 'boundary', 0.15, 0.06] } },

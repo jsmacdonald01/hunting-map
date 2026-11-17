@@ -48,7 +48,7 @@ select option { background: #151b17; color: var(--ink); }
 #recbar .dot { width: 9px; height: 9px; border-radius: 50%; background: #fff; animation: blink 1s infinite; }
 @keyframes blink { 50% { opacity: .2; } }
 
-#timebar { position: fixed; z-index: 5; left: var(--gap); right: var(--gap); top: calc(66px + var(--safe-top)); max-width: 520px; border-radius: var(--r); padding: 12px 14px 10px;
+#timebar { position: fixed; z-index: 5; left: var(--gap); right: calc(var(--gap) + 58px); top: calc(66px + var(--safe-top)); max-width: 520px; border-radius: var(--r); padding: 12px 14px 10px;
   transform-origin: 40px 0; animation: pop-in .3s var(--spring); }
 .time-row { display: flex; align-items: baseline; gap: 10px; }
 #time-big { font-size: 26px; line-height: 1; min-width: 96px; }

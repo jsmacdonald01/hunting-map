@@ -31,6 +31,13 @@ export function sunTimes(date, lat, lng) {
   return { sunrise: fromJulian(Jrise), sunset: fromJulian(Jset), noon: fromJulian(Jnoon) };
 }
 
+// Where the sun is in the sky: height above the horizon, and compass direction (0 = north, 90 = east), in degrees.
+export function sunPosition(date, lat, lng) {
+  const lw = rad * -lng, phi = rad * lat, d = toDays(date), c = sunCoords(d), H = siderealTime(d, lw) - c.ra;
+  const az = Math.atan2(Math.sin(H), Math.cos(H) * Math.sin(phi) - Math.tan(c.dec) * Math.cos(phi));
+  return { altitude: altitude(H, phi, c.dec) / rad, azimuth: (az / rad + 180 + 360) % 360 };
+}
+
 function moonCoords(d) {
   const L = rad * (218.316 + 13.176396 * d), M = rad * (134.963 + 13.064993 * d), F = rad * (93.272 + 13.22935 * d);
   const l = L + rad * 6.289 * Math.sin(M), b = rad * 5.128 * Math.sin(F), dt = 385001 - 20905 * Math.cos(M);
