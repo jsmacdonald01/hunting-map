@@ -111,6 +111,8 @@ select option { background: #151b17; color: var(--ink); }
 .sw.area { border-color: #74c0fc; }
 .sw.nohunt { border-color: #e03131; background: rgba(224, 49, 49, .4); }
 .ln { display: inline-block; width: 18px; height: 0; margin-right: 8px; vertical-align: 4px; border-top: 3px solid; }
+.ln.rail { border-color: #f3f3f3; border-top-style: dashed; background: #101214; height: 3px; }
+.ln.track { border-color: #f2c38b; border-top-style: dashed; }
 .ln.road { border-color: #ffca28; } .ln.ohv { border-color: #ce93d8; border-top-style: dotted; } .ln.trail { border-color: #d7ccc8; border-top-style: dashed; }
 
 /* ---------- Slide-up card ---------- */
@@ -169,6 +171,8 @@ progress { width: 100%; height: 10px; accent-color: var(--accent); }
 #sheet ol.steps { padding-left: 22px; margin: 8px 0; }
 #sheet ol.steps li { margin: 8px 0; }
 
+button.inline { min-height: 34px; padding: 4px 12px; font-size: 14px; margin-left: 6px; }
+
 /* Today card */
 #sheet .big { font-size: 20px; font-weight: 700; margin: 4px 0; }
 .wind { display: inline-block; font-weight: 700; color: var(--link); }
@@ -193,18 +197,23 @@ table.wx th, table.wx td { text-align: left; padding: 4px; border-bottom: 1px so
 .maplibregl-ctrl-scale { background: rgba(15, 20, 17, .6); color: #fff; border-color: #fff; font: 11px system-ui, sans-serif; }
 
 /* "You are here": dot, breathing halo, and a cone for the way you face. */
-.gps { width: 22px; height: 22px; position: relative; }
-.gps i { position: absolute; display: block; }
-.gps .dot { inset: 0; border-radius: 50%; background: #2f9bff; border: 3px solid #fff; box-shadow: 0 0 10px rgba(47, 155, 255, .9), 0 1px 4px rgba(0, 0, 0, .6); }
-.gps .halo { inset: -14px; border-radius: 50%; background: rgba(47, 155, 255, .35); animation: halo 2.4s ease-out infinite; }
-.gps .cone { left: 50%; bottom: 50%; width: 70px; height: 70px; margin-left: -35px; opacity: 0; transition: opacity .3s;
+.gps { width: 30px; height: 30px; }
+.gps { z-index: 3; }
+.gps i, .gps-cone i { position: absolute; display: block; }
+.gps-cone { width: 30px; height: 30px; pointer-events: none; }
+.gps .dot { inset: 0; width: auto; height: auto; margin: 0; border-radius: 50%; background: #1e8bff; border: 4px solid #fff; box-shadow: 0 0 0 2.5px #0b1f3a, 0 0 16px 4px rgba(47, 155, 255, .95), 0 2px 6px rgba(0, 0, 0, .7); }
+.gps .halo { inset: -22px; border-radius: 50%; background: rgba(47, 155, 255, .4); animation: halo 2.2s ease-out infinite; }
+.gps .halo.late { animation-delay: 1.1s; }
+.gps .you { position: absolute; left: 50%; top: calc(100% + 7px); transform: translateX(-50%); padding: 1px 7px; border-radius: 8px; background: #1e8bff; color: #fff; border: 1.5px solid #fff;
+  font: 700 11px/1.4 "Barlow SC", system-ui, sans-serif; letter-spacing: .08em; box-shadow: 0 1px 5px rgba(0, 0, 0, .6); }
+.gps-cone i { left: 50%; bottom: 50%; width: 110px; height: 110px; margin-left: -55px; opacity: 0; transition: opacity .3s;
   background: conic-gradient(from -28deg at 50% 100%, rgba(47, 155, 255, .0), rgba(47, 155, 255, .55) 28deg, rgba(47, 155, 255, 0) 56deg, transparent 56deg);
   -webkit-mask: radial-gradient(circle at 50% 100%, #000 20%, transparent 72%); mask: radial-gradient(circle at 50% 100%, #000 20%, transparent 72%); }
-.gps.has-heading .cone { opacity: 1; }
-@keyframes halo { 0% { transform: scale(.45); opacity: .9; } 100% { transform: scale(1.5); opacity: 0; } }
+.gps-cone.has-heading i { opacity: 1; }
+@keyframes halo { 0% { transform: scale(.4); opacity: .95; } 100% { transform: scale(1.7); opacity: 0; } }
 
 /* Ring around the pin you tapped. */
-.pin-ring { width: 46px; height: 46px; position: relative; pointer-events: none; }
+.pin-ring { width: 46px; height: 46px; pointer-events: none; }
 .pin-ring i { position: absolute; inset: 0; border-radius: 50%; border: 3px solid var(--accent); animation: ring 1.8s ease-out infinite; }
 .pin-ring i + i { animation-delay: .9s; }
 @keyframes ring { 0% { transform: scale(.85); opacity: 1; } 100% { transform: scale(2.1); opacity: 0; } }

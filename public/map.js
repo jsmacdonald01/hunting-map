@@ -1,7 +1,7 @@
 /* global maplibregl */
 // Builds the map itself: every picture layer, line layer and label, in drawing order (bottom first).
 import { ESRI, TXGIO, ANIMALS, ACCENT, EMPTY, introWanted } from './core.js';
-import { USGS, IMG_MAX, TOPO_MAX, DEM_URL, DEM_MAX, TX_PHOTOS, txPhotoUrl, SHARP_Z } from './offline.js';
+import { USGS, IMG_MAX, TOPO_MAX, DEM_URL, DEM_MAX, TX_PHOTOS, txPhotoUrl, SHARP_Z, TILES, roadsKey, roadsTemplate } from './offline.js';
 
 const saved = JSON.parse(localStorage.getItem('view') || 'null');
 const polys = ['in', ['geometry-type'], ['literal', ['Polygon', 'MultiPolygon']]];
@@ -17,6 +17,27 @@ maplibregl.addProtocol('txphoto', async (params, abort) => {
   if (!res.ok) throw new Error('Photo not available: ' + res.status);
   return { data: await res.arrayBuffer() };
 });
+// Roads, rail and town names (OpenStreetMap data from OpenFreeMap). A saved copy is used first, so the whole
+// Galveston-to-Huntsville download works with no signal; otherwise the piece is fetched live.
+let tileStore = null;
+maplibregl.addProtocol('roads', async (params, abort) => {
+  const [z, x, y] = params.url.slice('roads://'.length).split('/');
+  const hit = 'caches' in self ? await (await (tileStore ??= caches.open(TILES))).match(roadsKey(z, x, y)) : null;
+  if (hit) {
+    const body = hit.headers.get('X-Packed') === 'gzip' ? hit.body.pipeThrough(new DecompressionStream('gzip')) : hit.body;
+    return { data: await new Response(body).arrayBuffer() };
+  }
+  const from = await roadsTemplate();
+  const res = from && navigator.onLine ? await fetch(from.replace('{z}', z).replace('{x}', x).replace('{y}', y), { signal: abort.signal }).catch(() => null) : null;
+  return { data: res?.ok ? await res.arrayBuffer() : new ArrayBuffer(0) }; // nothing saved and no signal: just leave this piece blank
+});
+const ROAD_KINDS = ['motorway', 'trunk', 'primary', 'secondary', 'tertiary', 'minor', 'service', 'raceway', 'busway'];
+const BIG = ['motorway', 'trunk'], MID = ['secondary', 'tertiary'];
+const roadWidth = extra => ['interpolate', ['exponential', 1.4], ['zoom'],
+  7, ['+', extra * 0.6, ['match', ['get', 'class'], BIG, 1.2, 'primary', 0.8, 0.3]],
+  13, ['+', extra, ['match', ['get', 'class'], BIG, 4, 'primary', 3, MID, 2.2, 'minor', 1.4, 0.9]],
+  17, ['+', extra, ['match', ['get', 'class'], BIG, 14, 'primary', 11, MID, 9, 'minor', 6, 3.5]]];
+
 const txSource = (key, minzoom, maxzoom) => ({ type: 'raster', tiles: [`txphoto://${key}/{z}/{x}/{y}`], tileSize: 512, minzoom, maxzoom, attribution: TX_PHOTOS[key].credit });
 
 export const homeView = {
@@ -48,6 +69,7 @@ export const map = new maplibregl.Map({
       esri: { type: 'raster', tiles: [ESRI], tileSize: 256, maxzoom: 19, attribution: 'Satellite: Esri, Vantor, Earthstar Geographics, GIS User Community' },
       usgsimg: { type: 'raster', tiles: [USGS.usgsimg + '/{z}/{y}/{x}'], tileSize: 256, maxzoom: IMG_MAX, attribution: 'Offline satellite: USGS The National Map / USDA NAIP' },
       usgstopo: { type: 'raster', tiles: [USGS.usgstopo + '/{z}/{y}/{x}'], tileSize: 256, maxzoom: TOPO_MAX, attribution: 'Topo: USGS The National Map' },
+      osm: { type: 'vector', tiles: ['roads://{z}/{x}/{y}'], minzoom: 6, maxzoom: 14, attribution: 'Roads and rail: © OpenStreetMap contributors, OpenMapTiles, OpenFreeMap' },
       tx22: txSource('tx22', 11, 17),
       tx15: txSource('tx15', 11, 17),
       hd: txSource('tx22', SHARP_Z, SHARP_Z), // the saved "extra sharp" photos, used with no signal
@@ -87,6 +109,19 @@ export const map = new maplibregl.Map({
                  'hillshade-exaggeration': 0.5, 'hillshade-shadow-color': 'rgba(8,16,28,0.55)', 'hillshade-highlight-color': 'rgba(255,244,214,0.28)', 'hillshade-accent-color': 'rgba(8,16,28,0.3)' } },
       // A see-through wash of color over the ground: gold at dawn, deep blue at night, grey under cloud.
       { id: 'tint', type: 'background', paint: { 'background-color': '#ffffff', 'background-opacity': 0 } },
+      // Roads, tracks, rail lines and town names (the "grid-down" layer). Dark edges first, then the road color on top.
+      { id: 'osm-creek', type: 'line', source: 'osm', 'source-layer': 'waterway', minzoom: 11, paint: { 'line-color': '#6fc3ff', 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 0.6, 16, 2], 'line-opacity': 0.7 } },
+      { id: 'osm-road-edge', type: 'line', source: 'osm', 'source-layer': 'transportation', filter: ['in', ['get', 'class'], ['literal', ROAD_KINDS]],
+        layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#14181a', 'line-width': roadWidth(1.8), 'line-opacity': 0.85 } },
+      { id: 'osm-track', type: 'line', source: 'osm', 'source-layer': 'transportation', filter: ['in', ['get', 'class'], ['literal', ['track', 'path']]],
+        paint: { 'line-color': ['match', ['get', 'class'], 'track', '#f2c38b', '#e8e0d0'], 'line-width': ['interpolate', ['linear'], ['zoom'], 12, 1, 17, 3], 'line-dasharray': [3, 2] } },
+      { id: 'osm-road', type: 'line', source: 'osm', 'source-layer': 'transportation', filter: ['in', ['get', 'class'], ['literal', ROAD_KINDS]],
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+        paint: { 'line-color': ['match', ['get', 'class'], BIG, '#ffb347', 'primary', '#ffe08a', '#ffffff'], 'line-width': roadWidth(0), 'line-opacity': 0.92 } },
+      { id: 'osm-rail', type: 'line', source: 'osm', 'source-layer': 'transportation', filter: ['in', ['get', 'class'], ['literal', ['rail', 'transit']]],
+        paint: { 'line-color': '#101214', 'line-width': ['interpolate', ['linear'], ['zoom'], 7, 1.6, 13, 3.6, 17, 7] } },
+      { id: 'osm-rail-ties', type: 'line', source: 'osm', 'source-layer': 'transportation', filter: ['in', ['get', 'class'], ['literal', ['rail', 'transit']]],
+        paint: { 'line-color': '#f3f3f3', 'line-width': ['interpolate', ['linear'], ['zoom'], 7, 0.7, 13, 1.8, 17, 3.6], 'line-dasharray': [2.5, 2.5] } },
       { id: 'parcelsLive', type: 'raster', source: 'parcelsLive', paint: { 'raster-opacity': 0.75 } },
       { id: 'pub-fill', type: 'fill', source: 'public', filter: polys,
         paint: { 'fill-color': ['match', ['get', 'kind'], 'nohunt', '#e03131', 'boundary', '#1e90ff', '#74c0fc'],
@@ -134,6 +169,13 @@ export const map = new maplibregl.Map({
         layout: { 'symbol-placement': 'line', 'text-field': ['case', ['==', ['get', 'kind'], 'trail'], ['get', 'name'], ['concat', 'FS ', ['get', 'num']]],
                   'text-font': font, 'text-size': 11 },
         paint: { 'text-color': '#fff', 'text-halo-color': '#333', 'text-halo-width': 1.4 } },
+      { id: 'osm-road-name', type: 'symbol', source: 'osm', 'source-layer': 'transportation_name', minzoom: 11,
+        layout: { 'symbol-placement': 'line', 'text-field': ['coalesce', ['get', 'name'], ['get', 'ref']], 'text-font': font, 'text-size': ['interpolate', ['linear'], ['zoom'], 11, 10, 16, 13], 'symbol-spacing': 320 },
+        paint: { 'text-color': '#fff', 'text-halo-color': '#14181a', 'text-halo-width': 1.6 } },
+      { id: 'osm-place', type: 'symbol', source: 'osm', 'source-layer': 'place', filter: ['in', ['get', 'class'], ['literal', ['city', 'town', 'village', 'hamlet', 'suburb']]],
+        layout: { 'text-field': ['get', 'name'], 'text-font': font, 'text-max-width': 8,
+          'text-size': ['interpolate', ['linear'], ['zoom'], 6, ['match', ['get', 'class'], 'city', 13, 'town', 10, 0], 12, ['match', ['get', 'class'], 'city', 20, 'town', 16, 13]] },
+        paint: { 'text-color': '#fff', 'text-halo-color': '#0c1512', 'text-halo-width': 2 } },
       { id: 'sight-heat', type: 'heatmap', source: 'sightings', layout: { visibility: 'none' }, maxzoom: 16,
         paint: { 'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 8, 8, 14, 30], 'heatmap-opacity': 0.75,
                  'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 8, 0.6, 14, 1.5] } },
@@ -182,6 +224,7 @@ map.addControl(new maplibregl.AttributionControl({ compact: true, customAttribut
 
 export const BASE_LAYERS = ['usgsimg', 'esri', 'hd', 'tx22', 'tx15', 'usgstopo'];
 export const ROAD_LAYERS = ['roads-trail', 'roads-ohv', 'roads-road'];
+export const OSM_LAYERS = ['osm-creek', 'osm-road-edge', 'osm-track', 'osm-road', 'osm-rail', 'osm-rail-ties', 'osm-road-name', 'osm-place'];
 
 // Runs fn once the map has finished setting up (right away if it already has).
 let isReady = false;

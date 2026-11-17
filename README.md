@@ -81,6 +81,18 @@ Refresh sightings and roads with `node scripts/prepare-extras.mjs` (about 10 min
 - Camps, parking, info stations, boat ramps and gates on public land are square badges (tent, P, i…), so they
   can't be mistaken for the round blue "you are here" dot.
 
+**Grid-down map: Galveston to Huntsville (added 2026-11-17)**
+- **Layers → Roads, rail & towns:** every road, side road, service road, track, path and railroad, with street and
+  town names (from OpenStreetMap). Highways are orange, other roads white, railroads have a tie pattern, tracks are dashed.
+- **Menu → Download maps → Grid-down map** saves the whole area from Galveston and Freeport up past Huntsville, in
+  three parts you choose: **Roads, rail lines and town names** (about 190 MB, do this one first), **Topo map**
+  (about 1 GB) and **Satellite picture** (about 1 GB, less detail than a county download).
+- Use Wi-Fi, plug the phone in and keep the app open; the big parts take a while. **Stop** and **Update** pick up
+  where they left off.
+- Property owner names are only saved for the three hunting counties, not the whole area.
+- Your location marker is now a big blue dot with a **YOU** tag. The direction cone turns on with a second tap of
+  the locate button (an iPhone home-screen app can only ask one permission question at a time).
+
 **Menu → Display**
 - **Graphics:** Auto (eases off by itself on a slow phone, low battery or Low Power Mode), Full, or Lite.
 - Night mode switch, and a switch to turn the opening fly-in off.

@@ -1,6 +1,6 @@
 // The Layers panel: map type (with a smooth fade between them), what's shown on top, and the "no signal" check.
-import { map, BASE_LAYERS, ROAD_LAYERS } from './map.js';
-import { $, $$, esc, titleCase, state, ANIMALS, ESRI, emit } from './core.js';
+import { map, BASE_LAYERS, ROAD_LAYERS, OSM_LAYERS } from './map.js';
+import { $, $$, esc, titleCase, state, ANIMALS, ESRI, emit, on } from './core.js';
 import { updateParcelLayers } from './parcels.js';
 
 // ---------- Map type: satellite, hybrid (satellite with topo lines over it), topo ----------
@@ -44,6 +44,7 @@ const showAll = (layers, on) => layers.forEach(l => map.getLayer(l) && map.setLa
 const SWITCHES = {
   'lyr-public': ['pub-fill', 'pub-line', 'pub-label', 'pub-sublabel', 'pub-points', 'pub-points-label'],
   'lyr-roads': [...ROAD_LAYERS, 'roads-label'],
+  'lyr-osm': OSM_LAYERS,
   'lyr-pins': ['pins-glow', 'pins', 'pins-label'],
   'lyr-tracks': ['tracks-glow', 'tracks'],
 };
@@ -180,6 +181,8 @@ export function publicHtml(feats) {
   return `<h3>Public hunting</h3>${rows}${facts}
     <div class="note">Most TPWD public hunting land requires the Annual Public Hunting Permit. Check TPWD rules before you hunt.</div>`;
 }
+
+on('region-saved', part => { if (part === 'roads') map.getSource('osm')?.setTiles(['roads://{z}/{x}/{y}']); });
 
 // Called once the map is ready.
 export function startLayers() {

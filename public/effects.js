@@ -45,6 +45,8 @@ ringEl.innerHTML = '<i></i><i></i>';
 const ring = new maplibregl.Marker({ element: ringEl });
 on('pin-selected', p => ring.setLngLat([p.lng, p.lat]).addTo(map));
 on('sheet-closed', () => ring.remove());
+// Keep the ring on its pin when the 3D ground finishes loading underneath it.
+map.on('idle', () => { if (ring._map) ring.setLngLat(ring.getLngLat()); });
 
 // ---------- Paths that draw themselves ----------
 let drawing = null;

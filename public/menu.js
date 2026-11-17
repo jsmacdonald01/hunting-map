@@ -3,7 +3,7 @@
 import { map } from './map.js';
 import { db } from './db.js';
 import { $, $$, esc, fmtBytes, miles, state, emit, DISCLAIMER } from './core.js';
-import { downloadCounty, removeCounty, estimateBytes } from './offline.js';
+import { downloadCounty, removeCounty, estimateBytes, REGION, REGION_PARTS, regionParts, regionEstimate, regionBbox, downloadRegion, removeRegion } from './offline.js';
 import { openSheet, closeSheet, sheetOpen, shareThing, flyToSpot, flyToBounds } from './ui.js';
 import { addCountyLayers, removeCountyLayers, updateParcelLayers } from './parcels.js';
 import { refreshTracks, saveHidden } from './tracks.js';
@@ -55,7 +55,28 @@ async function downloadsHtml() {
     Use Wi-Fi if you can, and keep the app open until it finishes.</div>
     <label class="switch"><input type="checkbox" id="dl-sharp" ${wantSharp ? 'checked' : ''} ${activeDownload ? 'disabled' : ''}> Extra sharp offline photos</label>
     <div class="note">Adds the state's 2022 aerial photo at twice the detail when you zoom in with no signal. Roughly triples each county's size and takes a good while longer.</div>
-    ${rows}<div class="note">${storage}</div>`;
+    ${rows}
+    ${regionHtml()}
+    <div class="note">${storage}</div>`;
+}
+
+// The wide-area map for when the grid is down: roads and rail, topo, and a satellite picture, each saved separately.
+function regionHtml() {
+  const have = regionParts();
+  const rows = Object.entries(REGION_PARTS).map(([part, info]) => {
+    const h = have[part], busy = activeDownload?.key === 'region:' + part;
+    return `<div class="item"><div class="grow"><b>${info.label}</b>
+        <small>${info.hint} About ${fmtBytes(regionEstimate(part))}.</small>
+        <small>${h ? `Downloaded ${new Date(h.date).toLocaleDateString()}${h.failed ? ` · ${h.failed} pieces missed — tap Update` : ''}` : 'Not downloaded'}</small>
+        ${busy ? `<progress id="dl-prog" max="1" value="0"></progress><small id="dl-text">Starting…</small>` : ''}</div>
+      ${busy ? '<button id="dl-stop">Stop</button>'
+        : `<button data-region="${part}" ${activeDownload ? 'disabled' : ''} class="${h ? '' : 'primary'}">${h ? 'Update' : 'Download'}</button>
+           ${h ? `<button data-rmregion="${part}" class="danger">Remove</button>` : ''}`}</div>`;
+  }).join('');
+  return `<h3>Grid-down map: ${REGION.name}</h3>
+    <div class="note">Saves the whole area from Galveston and Freeport up past Huntsville, so you can find your way with no signal and no power grid.
+    Start with roads and rail: it is small and shows every side road, track and railroad. These are big downloads, so use Wi-Fi, plug the phone in, and keep the app open.
+    <button id="region-show" class="inline">Show the area</button></div>${rows}`;
 }
 
 function wireDownloads() {
@@ -76,6 +97,34 @@ function wireDownloads() {
   });
   const stop = $('#dl-stop');
   if (stop) stop.onclick = () => activeDownload?.ctl.abort();
+  $$('[data-region]').forEach(b => b.onclick = () => startRegion(b.dataset.region));
+  $$('[data-rmregion]').forEach(b => b.onclick = async () => {
+    if (!confirm('Remove this part of the grid-down map from this device?')) return;
+    b.disabled = true; b.textContent = 'Removing…';
+    await removeRegion(b.dataset.rmregion);
+    renderMenu('download');
+  });
+  $('#region-show').onclick = () => { closeSheet(); flyToBounds(regionBbox(), { pitch: 0 }); };
+}
+
+async function startRegion(part) {
+  const ctl = new AbortController();
+  activeDownload = { key: 'region:' + part, ctl };
+  await renderMenu('download');
+  const t0 = Date.now();
+  try {
+    await downloadRegion(part, (done, total, bytes) => {
+      const prog = $('#dl-prog'), text = $('#dl-text');
+      if (prog) { prog.max = total; prog.value = done; }
+      const mins = Math.round((Date.now() - t0) / 60000), left = done > 200 ? Math.round((Date.now() - t0) / done * (total - done) / 60000) : null;
+      if (text) text.textContent = `${Math.round(done / total * 100)}% · ${fmtBytes(bytes)} saved · ${mins} min${left != null ? ` · about ${left} min left` : ''}`;
+    }, ctl.signal);
+    emit('region-saved', part);
+  } catch (e) {
+    if (e.message !== 'Stopped') alert('Download problem: ' + e.message);
+  }
+  activeDownload = null;
+  if (sheetOpen() && menuTab === 'download') renderMenu('download');
 }
 
 async function startDownload(key) {
@@ -176,6 +225,7 @@ function aboutHtml() {
     <div class="note"><b>Satellite (with signal):</b> Esri World Imagery — Esri, Vantor, Earthstar Geographics, GIS User Community.<br>
     <b>Satellite (offline):</b> USGS The National Map, USDA NAIP imagery (public domain). Slightly less sharp than Esri.<br>
     <b>Topo:</b> USGS The National Map (public domain).<br>
+    <b>Roads, rail lines and town names:</b> © OpenStreetMap contributors (ODbL), OpenMapTiles, served by OpenFreeMap.<br>
     <b>Texas photos (summer 2022, winter 2015, and extra sharp offline):</b> Texas Geographic Information Office; USDA NAIP; Texas Orthoimagery Program.<br>
     <b>3D ground and hill shading:</b> Terrain Tiles on AWS Open Data (Mapzen), built from USGS 3DEP elevation data.<br>
     <b>Property lines and owners:</b> Texas Geographic Information Office (TxGIO), StratMap Land Parcels, from county appraisal districts.<br>

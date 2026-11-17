@@ -1,5 +1,5 @@
 // Offline helper. Keeps the app itself and every downloaded county on the device.
-const SHELL = 'shell-v9';
+const SHELL = 'shell-v11';
 const TILES = 'tiles-v1'; // downloaded map pictures and property lines (filled by the Download panel)
 
 const SHELL_FILES = [

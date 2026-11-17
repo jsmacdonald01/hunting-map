@@ -108,7 +108,7 @@ if (process.env.STAGE !== 'b') {
   // ---------- GPS dot ----------
   await page.click('#btn-locate');
   await page.waitForSelector('.gps', { timeout: 10000 });
-  check('Locate button shows the GPS dot', await page.locator('.gps .dot').count() === 1);
+  check('Locate button shows the GPS dot with a YOU tag', await page.locator('.gps .dot').count() === 1 && (await page.locator('.gps .you').innerText()) === 'YOU');
   await page.click('#btn-locate'); // following -> off
 
   // A phone that refuses location gets clear steps, not a dead button.
@@ -205,6 +205,26 @@ if (process.env.STAGE !== 'b') {
   await calm.close();
 }
 
+// ---------- Grid-down map: save a small sample area, then use it with no signal ----------
+{
+  await page.evaluate(() => localStorage.setItem('regionTest', JSON.stringify([-95.36, 29.765, -95.33, 29.785]))); // a few blocks of Houston
+  await page.reload();
+  await ready();
+  await map(() => window.huntingMap.jumpTo({ center: [-95.345, 29.775], zoom: 14, pitch: 0, bearing: 0 }));
+  await page.waitForFunction(() => window.huntingMap.queryRenderedFeatures({ layers: ['osm-road'] }).length > 20, null, { timeout: 30000 }).catch(() => {});
+  const live = await map(() => ({ roads: window.huntingMap.queryRenderedFeatures({ layers: ['osm-road'] }).length, rail: window.huntingMap.queryRenderedFeatures({ layers: ['osm-rail'] }).length }));
+  check('Roads and rail lines show on the map', live.roads > 20 && live.rail > 0, JSON.stringify(live));
+  await page.click('#btn-menu');
+  await page.click('[data-tab="download"]');
+  for (const part of ['roads', 'topo']) {
+    await page.click(`[data-region="${part}"]`);
+    await page.waitForFunction(p => !document.querySelector('#dl-prog') && document.querySelector(`[data-rmregion="${p}"]`), part, { timeout: 180000, polling: 1000 });
+  }
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('regionParts')));
+  check('Grid-down sample saved roads and topo', saved.roads?.files > 10 && saved.roads.failed === 0 && saved.topo?.files > 10 && saved.topo.failed === 0, JSON.stringify(saved).slice(0, 200));
+  await page.click('#sheet .close');
+}
+
 // ---------- Offline: the app still opens with no signal ----------
 await context.setOffline(true);
 await page.reload();
@@ -213,6 +233,16 @@ await page.waitForTimeout(4000);
 check('App opens offline with the new look', await page.evaluate(() => !!document.querySelector('#tools') && window.huntingMap.loaded()));
 const back = await page.evaluate(async url => { try { const r = await fetch(url); return r.ok ? (await r.blob()).size : r.status; } catch (e) { return String(e); } }, sharp.url);
 check('A saved sharp picture is served with no signal', back === sharp.size, String(back));
+{
+  await map(() => window.huntingMap.jumpTo({ center: [-95.345, 29.775], zoom: 14, pitch: 0, bearing: 0 }));
+  await page.waitForFunction(() => window.huntingMap.queryRenderedFeatures({ layers: ['osm-road'] }).length > 20, null, { timeout: 30000 }).catch(() => {});
+  const off = await page.evaluate(async () => {
+    const m = window.huntingMap, o = await import('./offline.js');
+    const topo = await fetch(`${o.USGS.usgstopo}/14/6771/3852`).then(r => r.ok, () => false); // a topo square inside the sample area
+    return { roads: m.queryRenderedFeatures({ layers: ['osm-road'] }).length, rail: m.queryRenderedFeatures({ layers: ['osm-rail'] }).length, names: m.queryRenderedFeatures({ layers: ['osm-road-name'] }).length, topo };
+  });
+  check('With no signal: saved roads, rail, street names and topo all show', off.roads > 20 && off.rail > 0 && off.names > 0 && off.topo, JSON.stringify(off));
+}
 check('Wind falls back to the saved forecast offline', (await page.locator('#wind-label').innerText()).trim().length > 0);
 
 check('No page errors', errors.length === 0, errors.join(' | ').slice(0, 300));
